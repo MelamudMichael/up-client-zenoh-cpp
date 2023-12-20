@@ -40,5 +40,6 @@ add_library(
     src/messageBuilder.cpp
     src/messageParser.cpp
     src/uSubscriptionClient.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/../uprotocol-core-api/src/main/proto/core/usubscription/v3/usubscription.pb.cc
     /usr/local/lib64/libzenohc.so)
 

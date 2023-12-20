@@ -147,15 +147,12 @@ std::future<UPayload> ZenohRpcClient::invokeMethod(const UUri &uri,
 
     z_owned_reply_channel_t *channel = new z_owned_reply_channel_t;
 
-   *channel = zc_reply_fifo_new(16);
+    *channel = zc_reply_fifo_new(16);
 
     z_get_options_t opts = z_get_options_default();
 
     opts.timeout_ms = requestTimeoutMs_;
-
     opts.value.payload = (z_bytes_t){.len =  message.size(), .start = (uint8_t *)message.data()};
-
-    auto uuidStr = UuidSerializer::serializeToString(attributes.id());
 
     if (0 != z_get(z_loan(session_), z_keyexpr(std::to_string(uriHash).c_str()), "", z_move(channel->send), &opts)) {
         spdlog::error("z_get failure");

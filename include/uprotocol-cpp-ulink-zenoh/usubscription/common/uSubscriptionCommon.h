@@ -1,6 +1,11 @@
 #ifndef _H_USUBSCRIPTION_COMMON_H_
 #define _H_USUBSCRIPTION_COMMON_H_
 
+#include <unordered_map>
+#include <uprotocol-cpp/uri/datamodel/UUri.h>
+
+using namespace uprotocol::uri;
+
 namespace uprotocol::uSubscription {
 
 /* request enumberations */

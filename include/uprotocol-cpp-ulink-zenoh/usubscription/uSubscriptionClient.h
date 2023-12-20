@@ -16,7 +16,7 @@ using namespace uprotocol::v1;
 
 namespace uprotocol::uSubscription {
 
-   typedef void (*notifyFunc)(const SubscriptionStatus&);
+   typedef void (*notifyFunc)(const SubscriptionStatus& );
 
    class uSubscriptionClient {
 

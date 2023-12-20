@@ -171,6 +171,7 @@ UStatus ZenohUTransport::send(const UUri &uri,
         return status;
     }
     
+    //GetStatus()
     /* determine according to the URI is the send is and RPC response or a regular publish */
     if (false == uri.getUResource().isRPCMethod()) {
         status.set_code(sendPublish(uri, payload, attributes));

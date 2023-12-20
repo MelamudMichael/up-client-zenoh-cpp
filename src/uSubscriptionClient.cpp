@@ -180,10 +180,7 @@ UPayload uSubscriptionClient::sendRequest(const T &request) noexcept {
 
         UPayload payload(buffer, sizeof(buffer), UPayloadType::REFERENCE);
        
-        auto type = UMessageType::REQUEST;
-        auto priority = UPriority::STANDARD;
-
-        UAttributesBuilder builder(uuid, type, priority);
+        UAttributesBuilder builder(uuid, UMessageType::REQUEST, UPriority::STANDARD);
 
         auto future = ZenohRpcClient::instance().invokeMethod(USubscriptionClientExt::instance().uSubUri_, payload, builder.build());
         if (false == future.valid()) {
@@ -191,9 +188,7 @@ UPayload uSubscriptionClient::sendRequest(const T &request) noexcept {
             break;
         }
 
-        std::future_status status;
-    
-        switch (status = future.wait_for(responseTimeout_); status) {
+        switch (std::future_status status = future.wait_for(responseTimeout_); status) {
             case std::future_status::timeout: {
                 spdlog::error("timeout received while waiting for response");
             } 
@@ -208,4 +203,3 @@ UPayload uSubscriptionClient::sendRequest(const T &request) noexcept {
 
     return retPayload;
 }
-
