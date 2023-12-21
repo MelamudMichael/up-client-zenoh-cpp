@@ -3,14 +3,12 @@
 
 #include <future>
 #include <optional>
-#include <uprotocol-cpp/transport/UTransport.h>
-#include <uprotocol-cpp/uri/datamodel/UUri.h>
+#include <uprotocol-cpp/transport/datamodel/UPayload.h>
 #include <src/main/proto/core/usubscription/v3/usubscription.pb.h>
 #include <ustatus.pb.h>
 
 using namespace std;
 using namespace uprotocol::utransport;
-using namespace uprotocol::uri;
 using namespace uprotocol::core::usubscription::v3;
 using namespace uprotocol::v1;
 

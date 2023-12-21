@@ -72,7 +72,7 @@ class ZenohUTransport : public UTransport {
         * @return Returns OKSTATUS if the payload has been successfully sent (ACK'ed), otherwise it
         * returns FAILSTATUS with the appropriate failure.
         */
-        UStatus send(const UUri &uri, 
+        UStatus send(const uprotocol::uri::UUri &uri, 
                      const UPayload &payload,
                      const UAttributes &attributes) noexcept;
 
@@ -83,7 +83,7 @@ class ZenohUTransport : public UTransport {
         * @return Returns OKSTATUS if the listener is unregistered correctly, otherwise it returns FAILSTATUS
         * with the appropriate failure.
         */ 
-        UStatus registerListener(const UUri &uri,
+        UStatus registerListener(const uprotocol::uri::UUri &uri,
                                  const UListener &listener) noexcept;
 
         /**
@@ -94,10 +94,10 @@ class ZenohUTransport : public UTransport {
         * @return Returns OKSTATUS if the listener is unregistered correctly, otherwise it returns FAILSTATUS
         * with the appropriate failure.
         */
-        UStatus unregisterListener(const UUri &uri, 
+        UStatus unregisterListener(const uprotocol::uri::UUri &uri, 
                                    const UListener &listener) noexcept;
 
-        UStatus receive(const UUri &uri, 
+        UStatus receive(const uprotocol::uri::UUri &uri, 
                         const UPayload &payload, 
                         const UAttributes &attributes) noexcept;
 
@@ -113,11 +113,11 @@ class ZenohUTransport : public UTransport {
         static void SubHandler(const z_sample_t* sample,
                                void* arg);
 
-        UCode sendPublish(const UUri &uri, 
+        UCode sendPublish(const uprotocol::uri::UUri &uri, 
                           const UPayload &payload,
                           const UAttributes &attributes) noexcept;
 
-        UCode sendQueryable(const UUri &uri, 
+        UCode sendQueryable(const uprotocol::uri::UUri &uri, 
                             const UPayload &payload,
                             const UAttributes &attributes) noexcept;
 
@@ -149,7 +149,7 @@ class ZenohUTransport : public UTransport {
         static constexpr auto termMaxRetries_ = size_t(10);
         static constexpr auto termRetryTimeout_ = std::chrono::milliseconds(100);
 
-        using cbArgumentType = std::tuple<const UUri&, ZenohUTransport*, const UListener&>;
+        using cbArgumentType = std::tuple<const uprotocol::uri::UUri&, ZenohUTransport*, const UListener&>;
 };
 
 #endif /*_ZENOH_UTRANSPORT_*/

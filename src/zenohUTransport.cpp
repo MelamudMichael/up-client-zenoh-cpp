@@ -36,6 +36,8 @@ using namespace uprotocol::uri;
 using namespace uprotocol::uuid;
 using namespace uprotocol::v1;
 
+// extern SubscriptionStatus_State getSubscriptionStatus(UUri &uri);
+
 ZenohUTransport& ZenohUTransport::instance(void) noexcept {
 
     static ZenohUTransport zenohUtransport;
@@ -317,7 +319,6 @@ UCode ZenohUTransport::sendQueryable(const UUri &uri,
 
 UStatus ZenohUTransport::registerListener(const UUri &uri,
                                           const UListener &listener) noexcept {
-   
     UStatus status;
 
     cbArgumentType* arg;
@@ -334,6 +335,13 @@ UStatus ZenohUTransport::registerListener(const UUri &uri,
         status.set_code(UCode::UNAVAILABLE);
         return status;
     }
+
+    // auto status = getSubscriptionStatus(uri);
+
+    // if (SUBSCRIBED != status) {
+    //     status.set_code(UCode::UNAVAILABLE);
+    //     return status;
+    // }
 
     do {
 
