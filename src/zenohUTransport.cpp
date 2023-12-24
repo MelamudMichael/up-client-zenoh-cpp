@@ -28,6 +28,7 @@
 #include <uprotocol-cpp-ulink-zenoh/session/zenohSessionManager.h>
 #include <uprotocol-cpp/uuid/serializer/UuidSerializer.h>
 #include <uprotocol-cpp/uri/serializer/LongUriSerializer.h>
+#include <core/usubscription/v3/usubscription.pb.h>
 #include <spdlog/spdlog.h>
 #include <zenoh.h>
 
@@ -35,8 +36,10 @@ using namespace std;
 using namespace uprotocol::uri;
 using namespace uprotocol::uuid;
 using namespace uprotocol::v1;
+using namespace uprotocol::core::usubscription::v3;
 
-// extern SubscriptionStatus_State getSubscriptionStatus(UUri &uri);
+extern UCode getPublisherStatus(const uprotocol::uri::UUri &uri);
+extern SubscriptionStatus_State getSubscriberStatus(const uprotocol::uri::UUri &uri);
 
 ZenohUTransport& ZenohUTransport::instance(void) noexcept {
 
@@ -155,10 +158,9 @@ UStatus ZenohUTransport::term() noexcept {
     return status;
 }
 
-UStatus ZenohUTransport::send(const UUri &uri, 
+UStatus ZenohUTransport::send(const uprotocol::uri::UUri &uri, 
                               const UPayload &payload,
                               const UAttributes &attributes) noexcept {
-
     UStatus status;
 
     if (0 == refCount_) {
@@ -173,7 +175,12 @@ UStatus ZenohUTransport::send(const UUri &uri,
         return status;
     }
     
-    //GetStatus()
+    if (UCode::OK != getPublisherStatus(uri)) {
+        spdlog::error("URI is not authorized to publish");
+        status.set_code(UCode::UNAVAILABLE);
+        return status;
+    }
+
     /* determine according to the URI is the send is and RPC response or a regular publish */
     if (false == uri.getUResource().isRPCMethod()) {
         status.set_code(sendPublish(uri, payload, attributes));
@@ -184,7 +191,7 @@ UStatus ZenohUTransport::send(const UUri &uri,
     return status;
 }
 
-UCode ZenohUTransport::sendPublish(const UUri &uri, 
+UCode ZenohUTransport::sendPublish(const uprotocol::uri::UUri &uri, 
                                    const UPayload &payload,
                                    const UAttributes &attributes) noexcept {
 
@@ -262,7 +269,7 @@ UCode ZenohUTransport::sendPublish(const UUri &uri,
     return status;
 }
 
-UCode ZenohUTransport::sendQueryable(const UUri &uri, 
+UCode ZenohUTransport::sendQueryable(const uprotocol::uri::UUri &uri, 
                                      const UPayload &payload,
                                      const UAttributes &attributes) noexcept {
 
@@ -317,7 +324,7 @@ UCode ZenohUTransport::sendQueryable(const UUri &uri,
     return UCode::OK;
 }
 
-UStatus ZenohUTransport::registerListener(const UUri &uri,
+UStatus ZenohUTransport::registerListener(const uprotocol::uri::UUri &uri,
                                           const UListener &listener) noexcept {
     UStatus status;
 
@@ -439,7 +446,7 @@ UStatus ZenohUTransport::registerListener(const UUri &uri,
     return status;
 }
 
-UStatus ZenohUTransport::unregisterListener(const UUri &uri, 
+UStatus ZenohUTransport::unregisterListener(const uprotocol::uri::UUri &uri, 
                                             const UListener &listener) noexcept {
 
     UStatus status;
@@ -603,7 +610,7 @@ UCode ZenohUTransport::mapEncoding(const USerializationHint &encodingIn,
     return UCode::OK;
 }
 
-UStatus ZenohUTransport::receive(const UUri &uri, 
+UStatus ZenohUTransport::receive(const uprotocol::uri::UUri &uri, 
                                  const UPayload &payload, 
                                  const UAttributes &attributes) noexcept {
 

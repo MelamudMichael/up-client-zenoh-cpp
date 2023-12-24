@@ -11,6 +11,7 @@ namespace uprotocol::uSubscription {
 /* request enumberations */
 enum class Request {
     SUBSCRIPTION_REQUEST = 1,
+    UNSUBSCRIBE_REQUEST,
     FETCH_SUBSCRIPTION_REQUEST,
     CREATE_TOPIC_REQUEST,
     DEPRECATE_TOPIC_REQUEST,
@@ -21,6 +22,7 @@ enum class Request {
 
 static std::unordered_map<std::string, Request> requestStrToNum = {
     {"uprotocol.core.usubscription.v3.SubscriptionRequest",         Request::SUBSCRIPTION_REQUEST},
+    {"uprotocol.core.usubscription.v3.UnsubscribeRequest",          Request::UNSUBSCRIBE_REQUEST},
     {"uprotocol.core.usubscription.v3.FetchSubscriptionsRequest",   Request::FETCH_SUBSCRIPTION_REQUEST},
     {"uprotocol.core.usubscription.v3.CreateTopicRequest",          Request::CREATE_TOPIC_REQUEST},
     {"uprotocol.core.usubscription.v3.DeprecateTopicRequest",       Request::DEPRECATE_TOPIC_REQUEST},

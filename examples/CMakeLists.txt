@@ -63,3 +63,16 @@ target_link_libraries(
     /usr/local/lib64/libzenohc.so
     fmt
     spdlog::spdlog)
+
+#subscription demo
+add_executable(
+    demo_main_subscription 
+    subscription/src/main_subscription.cpp)
+
+target_link_libraries(
+    demo_main_subscription
+    uprotocol-cpp-ulink-zenoh 
+    uprotocol-cpp
+    /usr/local/lib64/libzenohc.so
+    fmt
+    spdlog::spdlog)

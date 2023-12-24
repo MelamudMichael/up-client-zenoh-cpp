@@ -20,6 +20,11 @@ namespace uprotocol::uSubscription {
 
       public:
 
+         uSubscriptionClient(const uSubscriptionClient&) = delete;
+         
+         uSubscriptionClient& operator=(const uSubscriptionClient&) = delete;
+
+
          static uSubscriptionClient& instance() noexcept;
 
          /**
@@ -96,6 +101,8 @@ namespace uprotocol::uSubscription {
 
       private:
           
+         uSubscriptionClient() {}
+
          template <typename T>
             UPayload sendRequest(const T &request) noexcept;
          

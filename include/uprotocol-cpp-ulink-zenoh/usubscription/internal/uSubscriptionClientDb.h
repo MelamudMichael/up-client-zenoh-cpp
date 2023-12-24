@@ -16,7 +16,7 @@ using namespace uprotocol::uSubscription;
 class Temp {
 
     public:
-        static ::uprotocol::v1::UUri buildTopic(uprotocol::uri::UUri uri) {
+        static ::uprotocol::v1::UUri buildTopic(const uprotocol::uri::UUri uri) {
 
             auto serUri = LongUriSerializer::serialize(uri);
             
@@ -165,7 +165,7 @@ class USubscriptionClientDb : public UListener {
             return subStatusMap_[serUri];
         }
 
-        UCode getPublisherStatus(uprotocol::uri::UUri &uri) {
+        UCode getPublisherStatus(const uprotocol::uri::UUri &uri) {
 
             auto u = Temp::buildTopic(uri);
             
@@ -173,8 +173,13 @@ class USubscriptionClientDb : public UListener {
             if (!u.SerializeToString(&serUri)) {
                 return UCode::INTERNAL;
             }
-        
-            return pubStatusMap_[serUri];
+
+            if (pubStatusMap_.find(serUri) != pubStatusMap_.end()) {
+                return pubStatusMap_[serUri];
+            } else {
+                return UCode::UNAVAILABLE;
+            }
+
         }
         
         UCode registerForNotifications(::uprotocol::v1::UUri uri, 
@@ -228,3 +233,9 @@ class USubscriptionClientDb : public UListener {
         unordered_map<std::string, SubscriptionStatus_State> subStatusMap_;
 
 };
+
+extern UCode getPublisherStatus(const uprotocol::uri::UUri &uri) {
+
+   return USubscriptionClientDb::instance().getPublisherStatus(uri);
+
+}
