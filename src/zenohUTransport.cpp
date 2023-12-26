@@ -175,14 +175,15 @@ UStatus ZenohUTransport::send(const uprotocol::uri::UUri &uri,
         return status;
     }
     
-    if (UCode::OK != getPublisherStatus(uri)) {
-        spdlog::error("URI is not authorized to publish");
-        status.set_code(UCode::UNAVAILABLE);
-        return status;
-    }
-
     /* determine according to the URI is the send is and RPC response or a regular publish */
     if (false == uri.getUResource().isRPCMethod()) {
+
+        if (UCode::OK != getPublisherStatus(uri)) {
+            spdlog::error("URI is not authorized to publish");
+            status.set_code(UCode::UNAVAILABLE);
+            return status;
+        }
+
         status.set_code(sendPublish(uri, payload, attributes));
     } else {
         status.set_code(sendQueryable(uri, payload, attributes));
@@ -343,12 +344,13 @@ UStatus ZenohUTransport::registerListener(const uprotocol::uri::UUri &uri,
         return status;
     }
 
-    // auto status = getSubscriptionStatus(uri);
-
-    // if (SUBSCRIBED != status) {
-    //     status.set_code(UCode::UNAVAILABLE);
-    //     return status;
-    // }
+    if (false == uri.getUResource().isRPCMethod()) {
+        if (SubscriptionStatus_State_UNSUBSCRIBED == getSubscriberStatus(uri)) {
+            spdlog::error("URI is in state SubscriptionStatus_State_UNSUBSCRIBED");
+            status.set_code(UCode::UNAVAILABLE);
+            return status;
+        }
+    }
 
     do {
 

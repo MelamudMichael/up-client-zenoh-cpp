@@ -154,12 +154,19 @@ class USubscriptionClientDb : public UListener {
          * @param status subscription status
          * @return returns UCode_OK on success and ERROR on failure
          */
-        SubscriptionStatus_State getSubscriptionStatus(uprotocol::uri::UUri &uri) {
+        SubscriptionStatus_State getSubscriptionStatus(const uprotocol::uri::UUri &uri) {
 
             auto u = Temp::buildTopic(uri);
 
             std::string serUri;
             if (!u.SerializeToString(&serUri)) {
+                return SubscriptionStatus_State_UNSUBSCRIBED;
+            }
+
+            if (subStatusMap_.find(serUri) != subStatusMap_.end()) {
+                return subStatusMap_[serUri];
+            } else {
+                return SubscriptionStatus_State_UNSUBSCRIBED;
             }
 
             return subStatusMap_[serUri];
@@ -234,8 +241,10 @@ class USubscriptionClientDb : public UListener {
 
 };
 
-extern UCode getPublisherStatus(const uprotocol::uri::UUri &uri) {
-
+UCode getPublisherStatus(const uprotocol::uri::UUri &uri) {
    return USubscriptionClientDb::instance().getPublisherStatus(uri);
+}
 
+SubscriptionStatus_State getSubscriberStatus(const uprotocol::uri::UUri &uri) {
+    return USubscriptionClientDb::instance().getSubscriptionStatus(uri);
 }

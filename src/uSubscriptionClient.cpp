@@ -172,21 +172,24 @@ UPayload uSubscriptionClient::sendRequest(const T &request) noexcept {
        
         UAttributesBuilder builder(uuid, UMessageType::REQUEST, UPriority::STANDARD);
 
-        auto future = ZenohRpcClient::instance().invokeMethod(USubscriptionClientDb::instance().uSubUri_, payload, builder.build());
-        if (false == future.valid()) {
-            spdlog::error("result is not valid");
-            break;
-        }
-
-        switch (std::future_status status = future.wait_for(responseTimeout_); status) {
-            case std::future_status::timeout: {
-                spdlog::error("timeout received while waiting for response");
-            } 
-            break;
-            case std::future_status::ready: {
-                retPayload= future.get();
+        while (retPayload.size() == 0) {
+            auto future = ZenohRpcClient::instance().invokeMethod(USubscriptionClientDb::instance().uSubUri_, payload, builder.build());
+            if (false == future.valid()) {
+                spdlog::error("result is not valid");
+                break;
             }
-            break;
+
+            switch (std::future_status status = future.wait_for(responseTimeout_); status) {
+                case std::future_status::timeout: {
+                    spdlog::error("timeout received while waiting for response");
+                    return retPayload;
+                } 
+                break;
+                case std::future_status::ready: {
+                    retPayload = future.get();
+                }
+                break;
+            }
         }
 
     } while(0);
