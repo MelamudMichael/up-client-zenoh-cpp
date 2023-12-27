@@ -65,6 +65,7 @@ UCode ZenohSessionManager::init(ZenohSessionManagerConfig &sessionConfig) noexce
                 spdlog::error("z_open failed");
                 return UCode::INTERNAL;
             }
+
         }
 
         refCount_.fetch_add(1);

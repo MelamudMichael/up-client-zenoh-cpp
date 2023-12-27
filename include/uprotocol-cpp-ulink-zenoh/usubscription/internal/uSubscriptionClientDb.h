@@ -134,6 +134,7 @@ class USubscriptionClientDb : public UListener {
 
             std::string serUri;
             if (!uri.SerializeToString(&serUri)) {
+                spdlog::error("SerializeToString failed");
                 return UCode::INTERNAL;
             }
 
@@ -160,10 +161,12 @@ class USubscriptionClientDb : public UListener {
 
             std::string serUri;
             if (!u.SerializeToString(&serUri)) {
+                spdlog::error("SerializeToString failed");
                 return SubscriptionStatus_State_UNSUBSCRIBED;
             }
 
             if (subStatusMap_.find(serUri) != subStatusMap_.end()) {
+                spdlog::info("returning {} ", subStatusMap_[serUri]);
                 return subStatusMap_[serUri];
             } else {
                 return SubscriptionStatus_State_UNSUBSCRIBED;

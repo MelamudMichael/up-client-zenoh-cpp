@@ -345,7 +345,7 @@ UStatus ZenohUTransport::registerListener(const uprotocol::uri::UUri &uri,
     }
 
     if (false == uri.getUResource().isRPCMethod()) {
-        if (SubscriptionStatus_State_UNSUBSCRIBED == getSubscriberStatus(uri)) {
+        if (SubscriptionStatus_State_SUBSCRIBED != getSubscriberStatus(uri)) {
             spdlog::error("URI is in state SubscriptionStatus_State_UNSUBSCRIBED");
             status.set_code(UCode::UNAVAILABLE);
             return status;

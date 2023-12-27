@@ -74,7 +74,15 @@ UCode uSubscriptionClient::createTopic(CreateTopicRequest &request) {
         return UCode::UNKNOWN;
     }
 
-    return USubscriptionClientDb::instance().setStatus(request.topic(), res.code());
+    if (res.code() == UCode::ALREADY_EXISTS) {
+        USubscriptionClientDb::instance().setStatus(request.topic(), UCode::OK);
+        return UCode::OK;
+    } else {
+        USubscriptionClientDb::instance().setStatus(request.topic(), res.code());
+        return res.code();
+    }
+
+    return res.code();
 }
 
 UCode uSubscriptionClient::registerNotifications(NotificationsRequest &request,
@@ -120,7 +128,7 @@ std::optional<SubscriptionResponse> uSubscriptionClient::subscribe(const Subscri
         return std::nullopt;
     }
     
-    USubscriptionClientDb::instance().setStatus(request.topic(), resp.status());
+    USubscriptionClientDb::instance().setStatus(request.topic(), resp.status().state());
     
     return resp;
 }
@@ -190,6 +198,8 @@ UPayload uSubscriptionClient::sendRequest(const T &request) noexcept {
                 }
                 break;
             }
+
+            sleep(1);
         }
 
     } while(0);
