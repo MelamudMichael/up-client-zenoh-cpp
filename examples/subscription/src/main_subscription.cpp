@@ -56,6 +56,50 @@ class TimeListener : public UListener {
     }
 };
 
+CreateTopicRequest buildRequest(uprotocol::uri::UUri uri) {
+
+     CreateTopicRequest request;
+
+    ::uprotocol::v1::UAuthority* mutableAuthority = request.mutable_topic()->mutable_authority();
+    if (mutableAuthority != nullptr) {        
+
+        if (true == uri.getUAuthority().isRemote()) {
+            mutableAuthority->set_name(uri.getUAuthority().getDevice());
+        }
+    }
+
+    ::uprotocol::v1::UEntity* mutableEntity = request.mutable_topic()->mutable_entity();
+    if (mutableEntity != nullptr) {        
+        uprotocol::uri::UEntity entity = uri.getUEntity();
+
+        mutableEntity->set_name(entity.getName());
+        
+        if (true == entity.getId().has_value()) {
+            mutableEntity->set_id(entity.getId().value());
+        }
+
+        if (true == entity.getVersion().has_value()) {
+            mutableEntity->set_version_major(entity.getVersion().value());
+        }
+    }
+
+    ::uprotocol::v1::UResource* mutableResource = request.mutable_topic()->mutable_resource();
+    if (mutableResource != nullptr) {        
+
+        uprotocol::uri::UResource resource = uri.getUResource();
+
+        mutableResource->set_name(resource.getName());
+        mutableResource->set_instance(resource.getInstance());
+        mutableResource->set_message(resource.getMessage());
+
+        if (true == resource.getId().has_value()) {
+            mutableResource->set_id(resource.getId().value());
+        }
+    }
+
+    return request;
+}
+
 int main(int argc, char **argv) {
 
     TimeListener listener;
@@ -77,64 +121,32 @@ int main(int argc, char **argv) {
 
     auto timeUri = uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(), uprotocol::uri::UEntity::longFormat("test.app"), uprotocol::uri::UResource::longFormat("milliseconds"));
 
+    auto realUri = uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(), uprotocol::uri::UEntity::longFormat("real.app"), uprotocol::uri::UResource::longFormat("milliseconds"));
+
     UAttributesBuilder builder(Uuidv8Factory::create(), UMessageType::PUBLISH, UPriority::STANDARD);
 
     UAttributes attributes = builder.build();
 
     UPayload payload(nullptr, 0, UPayloadType::VALUE);
    
-    CreateTopicRequest request;
-
-    ::uprotocol::v1::UAuthority* mutableAuthority = request.mutable_topic()->mutable_authority();
-    if (mutableAuthority != nullptr) {        
-
-        if (true == timeUri.getUAuthority().isRemote()) {
-            mutableAuthority->set_name(timeUri.getUAuthority().getDevice());
-        }
-    }
-
-    ::uprotocol::v1::UEntity* mutableEntity = request.mutable_topic()->mutable_entity();
-    if (mutableEntity != nullptr) {        
-        uprotocol::uri::UEntity entity = timeUri.getUEntity();
-
-        mutableEntity->set_name(entity.getName());
-        
-        if (true == entity.getId().has_value()) {
-            mutableEntity->set_id(entity.getId().value());
-        }
-
-        if (true == entity.getVersion().has_value()) {
-            mutableEntity->set_version_major(entity.getVersion().value());
-        }
-    }
-
-    ::uprotocol::v1::UResource* mutableResource = request.mutable_topic()->mutable_resource();
-    if (mutableResource != nullptr) {        
-
-        uprotocol::uri::UResource resource = timeUri.getUResource();
-
-        mutableResource->set_name(resource.getName());
-        mutableResource->set_instance(resource.getInstance());
-        mutableResource->set_message(resource.getMessage());
-
-        if (true == resource.getId().has_value()) {
-            mutableResource->set_id(resource.getId().value());
-        }
-    }
+   
+    auto req1 = buildRequest(timeUri);
+    auto req2 = buildRequest(realUri);
 
     uSubscriptionClient::instance().init();
     
-    auto resp = uSubscriptionClient::instance().createTopic(request);
+    auto resp = uSubscriptionClient::instance().createTopic(req1);
+    resp = uSubscriptionClient::instance().createTopic(req2);
 
-    spdlog::warn("#SCENARIO #1 Start - Send without CreateTopic");
-    transport->send(timeUri, payload, attributes);
-    spdlog::warn("#SCENARIO #1 End - Send without CreateTopic");
+//     spdlog::warn("#SCENARIO #1 Start - Send without CreateTopic");
+//     transport->send(timeUri, payload, attributes);
+//     spdlog::warn("#SCENARIO #1 End - Send without CreateTopic");
 
-    std::getline(std::cin, userInput);    
+//    // std::getline(std::cin, userInput);    
 
-    spdlog::warn("#SCENARIO #2 Start - registerListener without subscribe");
-    transport->registerListener(timeUri, listener);
-    spdlog::warn("#SCENARIO #2 End - registerListener without subscribe");
+//     spdlog::warn("#SCENARIO #2 Start - registerListener without subscribe");
+//     transport->registerListener(timeUri, listener);
+//     spdlog::warn("#SCENARIO #2 End - registerListener without subscribe");
 
     while (!gTerminate) {
 
