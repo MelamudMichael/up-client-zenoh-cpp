@@ -150,6 +150,8 @@ UCode uSubscriptionClient::unSubscribe(const UnsubscribeRequest &request) {
 
     if (UCode::OK == resp.code()) {
         USubscriptionClientDb::instance().setStatus(request.topic(), SubscriptionStatus_State_UNSUBSCRIBED);
+    } else {
+        /* TODO */
     }
     
     return resp.code();

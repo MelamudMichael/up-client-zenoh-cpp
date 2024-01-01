@@ -102,7 +102,7 @@ CreateTopicRequest buildCreateTopicRequest(uprotocol::uri::UUri uri) {
 
 DeprecateTopicRequest buildDeprecateTopicRequest(uprotocol::uri::UUri uri) {
 
-     CreateTopicRequest request;
+     DeprecateTopicRequest request;
 
     ::uprotocol::v1::UAuthority* mutableAuthority = request.mutable_topic()->mutable_authority();
     if (mutableAuthority != nullptr) {        
@@ -144,6 +144,49 @@ DeprecateTopicRequest buildDeprecateTopicRequest(uprotocol::uri::UUri uri) {
     return request;
 }
 
+UnsubscribeRequest buildUnsubscribeRequest(uprotocol::uri::UUri uri) {
+
+    UnsubscribeRequest request;
+
+    ::uprotocol::v1::UAuthority* mutableAuthority = request.mutable_topic()->mutable_authority();
+    if (mutableAuthority != nullptr) {        
+
+        if (true == uri.getUAuthority().isRemote()) {
+            mutableAuthority->set_name(uri.getUAuthority().getDevice());
+        }
+    }
+
+    ::uprotocol::v1::UEntity* mutableEntity = request.mutable_topic()->mutable_entity();
+    if (mutableEntity != nullptr) {        
+        uprotocol::uri::UEntity entity = uri.getUEntity();
+
+        mutableEntity->set_name(entity.getName());
+        
+        if (true == entity.getId().has_value()) {
+            mutableEntity->set_id(entity.getId().value());
+        }
+
+        if (true == entity.getVersion().has_value()) {
+            mutableEntity->set_version_major(entity.getVersion().value());
+        }
+    }
+
+    ::uprotocol::v1::UResource* mutableResource = request.mutable_topic()->mutable_resource();
+    if (mutableResource != nullptr) {        
+
+        uprotocol::uri::UResource resource = uri.getUResource();
+
+        mutableResource->set_name(resource.getName());
+        mutableResource->set_instance(resource.getInstance());
+        mutableResource->set_message(resource.getMessage());
+
+        if (true == resource.getId().has_value()) {
+            mutableResource->set_id(resource.getId().value());
+        }
+    }
+
+    return request;
+}
 
 SubscriptionRequest buildSubscriptionRequest(uprotocol::uri::UUri uri) {
 
@@ -217,10 +260,10 @@ int main(int argc, char **argv) {
     auto realUri = uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(), uprotocol::uri::UEntity::longFormat("real.app"), uprotocol::uri::UResource::longFormat("milliseconds"));
     auto demoUri = uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(), uprotocol::uri::UEntity::longFormat("demo.app"), uprotocol::uri::UResource::longFormat("milliseconds"));
 
-
     auto req1 = buildCreateTopicRequest(realUri);
     auto req2 = buildCreateTopicRequest(demoUri);
     auto req3 = buildSubscriptionRequest(realUri);
+    auto req4 = buildUnsubscribeRequest(realUri);
 
     UAttributesBuilder builder(Uuidv8Factory::create(), UMessageType::PUBLISH, UPriority::STANDARD);
 
@@ -230,53 +273,50 @@ int main(int argc, char **argv) {
 
     std::getline(std::cin, userInput);    
 
-    spdlog::warn("#SCENARIO #1 Start - Send without CreateTopic");
+    spdlog::info("########## SCENARIO #1 Start - Try to send without calling CreateTopic ##########");
     auto retVal = transport->send(realUri, payload, attributes).code();
-    spdlog::info("ret value = {} ", retVal);
-    spdlog::warn("#SCENARIO #1 End - Send without CreateTopic");
+    spdlog::info("########## SCENARIO #1 End - Send without calling CreateTopic (return value == {}) ##########", retVal);
 
-    spdlog::info("\nsending CreateTopic Requests");
+    spdlog::info("########## Sending CreateTopic Requests to uSubscription ##########");
+
     auto resp = uSubscriptionClient::instance().createTopic(req1);
-
-    spdlog::info("response received real.app = {} ", resp);
-
+    spdlog::info("\t########## response received real.app = {} ", resp);
     resp = uSubscriptionClient::instance().createTopic(req2);
-
-    spdlog::info("response received demo.app = {} ", resp);
+    spdlog::info("\t########## response received demo.app = {} ", resp);
 
     std::getline(std::cin, userInput);    
 
-    spdlog::warn("#SCENARIO #2 Start - Send without auth");
+    spdlog::info("########## SCENARIO #2 Start - Try to send without authorization ##########");
     retVal = transport->send(demoUri, payload, attributes).code();
-    spdlog::info("ret value = {} ", retVal);
-    spdlog::warn("#SCENARIO #2 End - Send without auth");  
+    spdlog::info("########## SCENARIO #2 End - Send without authorization (return value == {}) ##########", retVal);  
    
     std::getline(std::cin, userInput);    
 
     uint8_t buf[1];
     UPayload validPayload(buf, 1, UPayloadType::VALUE);
 
-    spdlog::warn("#SCENARIO #3 Start - Send with auth");
+    spdlog::info("########## SCENARIO #3 Start - Try to send with authorizatdion ##########");
     retVal = transport->send(realUri, validPayload, attributes).code();
-    spdlog::info("ret value = {} ", retVal);
-    spdlog::warn("#SCENARIO #3 End - Send with auth"); 
+    spdlog::info("########## SCENARIO #3 End - Send with authorizatdion (return value == {}) ##########", retVal); 
 
     std::getline(std::cin, userInput);      
-    spdlog::warn("#SCENARIO #4 Start - registerListener without subscribe");
-    transport->registerListener(realUri, listener);
-    spdlog::warn("#SCENARIO #4 End - registerListener without subscribe");
-
+    spdlog::info("########## SCENARIO #4 Start - Try to RegisterListener without subscribe ##########");
+    retVal = transport->registerListener(realUri, listener).code();
+    spdlog::info("########## SCENARIO #4 End - registerListener without subscribe (return value == {}) ##########", retVal);
 
     std::getline(std::cin, userInput);     
-
     
     auto subResp = uSubscriptionClient::instance().subscribe(req3);
 
-    spdlog::info("subscribe response received real.app = {} ", subResp.value().mutable_status()->state());
+    spdlog::info("\t########## subscribe response received real.app = {} ", subResp.value().mutable_status()->state());
 
-    spdlog::warn("#SCENARIO #5 Start - registerListener after subscribe");
+    spdlog::info("########## SCENARIO #5 Start - Try to RegisterListener after subscribe ##########");
     transport->registerListener(realUri, listener);
-    spdlog::warn("#SCENARIO #5 End - registerListener after subscribe");
+    spdlog::info("########## SCENARIO #5 End - registerListener after subscribe ##########");
+
+    spdlog::info("########## SCENARIO #6 Start - unsubscribe ##########");
+    uSubscriptionClient::instance().unSubscribe(req4);
+    spdlog::info("########## SCENARIO #6 End - unsubscribe ##########");
 
     while (!gTerminate) {
 

@@ -21,6 +21,8 @@
  * SPDX-FileCopyrightText: 2023 General Motors GTO LLC
  * SPDX-License-Identifier: Apache-2.0
  */
+#ifndef THREADPOOL_H
+#define THREADPOOL_H
 
 #include <functional>
 #include <future>
@@ -119,3 +121,5 @@ class ThreadPool
 
     static constexpr auto timeout_ = 100;
 };
+
+#endif //THREADPOOL_H

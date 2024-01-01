@@ -81,7 +81,7 @@ UStatus ZenohUTransport::init() noexcept {
         refCount_.fetch_add(1);
     }
     
-    spdlog::info("ZenohUTransport init done refCount = {}", refCount_);
+    spdlog::debug("ZenohUTransport init done refCount = {}", refCount_);
 
     status.set_code(UCode::OK);
 
