@@ -295,7 +295,7 @@ int main(int argc, char **argv) {
     uint8_t buf[1];
     UPayload validPayload(buf, 1, UPayloadType::VALUE);
 
-    spdlog::info("########## SCENARIO #3 Start - Try to send with authorizatdion ##########");
+    spdlog::info("########## SCENARIO #3 Start - Try to send with authorizaion ##########");
     retVal = transport->send(realUri, validPayload, attributes).code();
     spdlog::info("########## SCENARIO #3 End - Send with authorizatdion (return value == {}) ##########", retVal); 
 

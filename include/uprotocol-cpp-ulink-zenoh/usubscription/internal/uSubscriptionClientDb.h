@@ -166,7 +166,6 @@ class USubscriptionClientDb : public UListener {
             }
 
             if (subStatusMap_.find(serUri) != subStatusMap_.end()) {
-                spdlog::info("returning {} ", subStatusMap_[serUri]);
                 return subStatusMap_[serUri];
             } else {
                 return SubscriptionStatus_State_UNSUBSCRIBED;
