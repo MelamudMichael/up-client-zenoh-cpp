@@ -25,6 +25,7 @@
 #ifndef _ZENOH_RPC_CLIENT_H_
 #define _ZENOH_RPC_CLIENT_H_
 
+#include <unordered_map>
 #include <uprotocol-cpp/rpc/RpcClient.h>
 #include <uprotocol-cpp-ulink-zenoh/utils/ThreadPool.h>
 #include <zenoh.h>
@@ -67,6 +68,9 @@ class ZenohRpcClient : public RpcClient {
         std::future<UPayload> invokeMethod(const UUri &uri, 
                                            const UPayload &payload, 
                                            const UAttributes &attributes) noexcept;
+
+        UStatus getError(const UUID &uid) noexcept;
+
     private:
 
         static UPayload handleReply(z_owned_reply_channel_t *channel);
@@ -82,6 +86,7 @@ class ZenohRpcClient : public RpcClient {
         static constexpr auto requestTimeoutMs_ = 5000;
         static constexpr auto threadPoolSize_ = size_t(10);
 
+        unordered_map<std::string, UStatus> invokeMethodStatusMap_;
 };
 
 #endif /*_ZENOH_RPC_CLIENT_H_*/

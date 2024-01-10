@@ -121,51 +121,81 @@ std::future<UPayload> ZenohRpcClient::invokeMethod(const UUri &uri,
                                                    const UPayload &payload, 
                                                    const UAttributes &attributes) noexcept {
     std::future<UPayload> future;
+    UStatus status;
 
-    if (0 == refCount_) {
-        spdlog::error("ZenohRpcClient is not initialized");
-        return std::move(future);
-    }
+    do {
+
+        status.set_code(UCode::OK);
+        
+        if (0 == refCount_) {
+            spdlog::error("ZenohRpcClient is not initialized");
+            status.set_code(UCode::UNAVAILABLE);
+            break;
+        }
+        
+        if (UMessageType::REQUEST != attributes.type()) {
+            spdlog::error("Wrong message type = {}", UMessageTypeToString(attributes.type()).value());
+            status.set_code(UCode::INVALID_ARGUMENT);
+            break;
+        }
+        
+        if (UMessageType::REQUEST != attributes.type()) {
+            spdlog::error("Wrong message type = {}", UMessageTypeToString(attributes.type()).value());
+            status.set_code(UCode::INVALID_ARGUMENT);
+            break;
+        }
     
-    if (UMessageType::REQUEST != attributes.type()) {
-        spdlog::error("Wrong message type = {}", UMessageTypeToString(attributes.type()).value());
-        return std::move(future);
-    }
-    
-    auto uriHash = std::hash<std::string>{}(LongUriSerializer::serialize(uri));
+        auto uriHash = std::hash<std::string>{}(LongUriSerializer::serialize(uri));
 
-    if (UMessageType::REQUEST != attributes.type()) {
-        spdlog::error("Wrong message type = {}", UMessageTypeToString(attributes.type()).value());
-        return std::move(future);
-    }
-  
-    auto message = MessageBuilder::build(attributes, payload);
-    if (0 == message.size()) {
-        spdlog::error("MessageBuilder failure");
-        return std::move(future);
-    }
+        auto message = MessageBuilder::build(attributes, payload);
+        if (0 == message.size()) {
+            spdlog::error("MessageBuilder failure");
+            status.set_code(UCode::INTERNAL);
+            break;
+        }
 
-    z_owned_reply_channel_t *channel = new z_owned_reply_channel_t;
+        z_owned_reply_channel_t *channel = new z_owned_reply_channel_t;
 
-    *channel = zc_reply_fifo_new(16);
+        *channel = zc_reply_fifo_new(16);
 
-    z_get_options_t opts = z_get_options_default();
+        z_get_options_t opts = z_get_options_default();
 
-    opts.timeout_ms = requestTimeoutMs_;
-    opts.value.payload = (z_bytes_t){.len =  message.size(), .start = (uint8_t *)message.data()};
+        opts.timeout_ms = requestTimeoutMs_;
+        opts.value.payload = (z_bytes_t){.len =  message.size(), .start = (uint8_t *)message.data()};
 
-    if (0 != z_get(z_loan(session_), z_keyexpr(std::to_string(uriHash).c_str()), "", z_move(channel->send), &opts)) {
-        spdlog::error("z_get failure");
-        return std::move(future);
-    }  
-    
-    future = threadPool_->submit(handleReply, channel);
+        if (0 != z_get(z_loan(session_), z_keyexpr(std::to_string(uriHash).c_str()), "", z_move(channel->send), &opts)) {
+            spdlog::error("z_get failure");
+            status.set_code(UCode::INTERNAL);
+            break;
+        }  
+        
+        bool isFull;
 
-    if (false == future.valid()) {
-        spdlog::error("failed to invoke method");
-    }
-   
+        future = threadPool_->submit(handleReply, isFull, channel);
+
+        if (true == isFull) {
+            spdlog::error("submit queue is full");
+            status.set_code(UCode::RESOURCE_EXHAUSTED);
+            break;
+        }
+
+    } while(0);
+
     return future; 
+}
+
+UStatus ZenohRpcClient::getError(const UUID &uid) noexcept {
+    
+    auto uuidStr = UuidSerializer::serializeToString(uid);
+
+    auto status = invokeMethodStatusMap_.find(uuidStr);    
+
+    if (status == invokeMethodStatusMap_.end()) {
+        UStatus status;
+        status.set_code(UCode::OK);
+    } else {
+        return status->second;
+    }
 }
 
 UPayload ZenohRpcClient::handleReply(z_owned_reply_channel_t *channel) {

@@ -31,11 +31,16 @@ static std::unordered_map<std::string, Request> requestStrToNum = {
     {"uprotocol.core.usubscription.v3.ResetRequest",                Request::RESET_REQUEST}};
 }
 
-/* URI for receiving usubscription requests */
+//core.usubscription.subscribe
 static uprotocol::uri::UUri uSubRequestsUri = uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(), 
                                                                    uprotocol::uri::UEntity::longFormat("core.usubscription"),
                                                                    uprotocol::uri::UResource::forRpcRequest("subscribe"));
-/* URI for sending usubscription updates */
+//uSub->streamer - rpc regex 
+static uprotocol::uri::UUri uSubRemoteRequestsUri = uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(), 
+                                                                         uprotocol::uri::UEntity::longFormat("core.streamer"),
+                                                                         uprotocol::uri::UResource::forRpcRequest("subscribe")); /* TBD */
+
+/* URI for sending usubscription updates */ 
 static uprotocol::uri::UUri uSubUpdatesUri = uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(), 
                                                                   uprotocol::uri::UEntity::longFormat("core.usubscription"),
                                                                   uprotocol::uri::UResource::forRpcRequest("subscriptions#Update"));
