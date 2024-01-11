@@ -256,7 +256,7 @@ UCode ZenohUTransport::sendPublish(const uprotocol::uri::UUri &uri,
             break;
         }
         
-        if (0 != z_publisher_put(z_loan(pub), message.data(), message.size(), &options)) {
+        if (0 != z_publisher_put(z_loan(pub), payload.data(), payload.size(), &options)) {
             spdlog::error("z_publisher_put failed");
             break;
         }
