@@ -26,6 +26,7 @@
 #include <uprotocol-cpp-ulink-zenoh/transport/zenohUTransport.h>
 #include <uprotocol-cpp-ulink-zenoh/usubscription/uSubscriptionClient.h>
 #include <uprotocol-cpp/uuid/factory/Uuidv8Factory.h>
+#include <uprotocol-cpp/uri/serializer/LongUriSerializer.h>
 #include <src/main/proto/ustatus.pb.h>
 
 using namespace uprotocol::utransport;
@@ -45,7 +46,7 @@ void signalHandler(int signal) {
 
 class TimeListener : public UListener {
     
-    UStatus onReceive(const uprotocol::uri::UUri &uri, 
+    UStatus onReceive(const UUri &uri, 
                       const UPayload &payload, 
                       const UAttributes &attributes) const {
         UStatus status;
@@ -56,178 +57,38 @@ class TimeListener : public UListener {
     }
 };
 
-CreateTopicRequest buildCreateTopicRequest(uprotocol::uri::UUri uri) {
+CreateTopicRequest buildCreateTopicRequest(UUri uri) {
 
-     CreateTopicRequest request;
+    CreateTopicRequest request;
 
-    ::uprotocol::v1::UAuthority* mutableAuthority = request.mutable_topic()->mutable_authority();
-    if (mutableAuthority != nullptr) {        
-
-        if (true == uri.getUAuthority().isRemote()) {
-            mutableAuthority->set_name(uri.getUAuthority().getDevice());
-        }
-    }
-
-    ::uprotocol::v1::UEntity* mutableEntity = request.mutable_topic()->mutable_entity();
-    if (mutableEntity != nullptr) {        
-        uprotocol::uri::UEntity entity = uri.getUEntity();
-
-        mutableEntity->set_name(entity.getName());
-        
-        if (true == entity.getId().has_value()) {
-            mutableEntity->set_id(entity.getId().value());
-        }
-
-        if (true == entity.getVersion().has_value()) {
-            mutableEntity->set_version_major(entity.getVersion().value());
-        }
-    }
-
-    ::uprotocol::v1::UResource* mutableResource = request.mutable_topic()->mutable_resource();
-    if (mutableResource != nullptr) {        
-
-        uprotocol::uri::UResource resource = uri.getUResource();
-
-        mutableResource->set_name(resource.getName());
-        mutableResource->set_instance(resource.getInstance());
-        mutableResource->set_message(resource.getMessage());
-
-        if (true == resource.getId().has_value()) {
-            mutableResource->set_id(resource.getId().value());
-        }
-    }
+    request.set_allocated_topic(&uri);
 
     return request;
 }
 
-DeprecateTopicRequest buildDeprecateTopicRequest(uprotocol::uri::UUri uri) {
+DeprecateTopicRequest buildDeprecateTopicRequest(UUri uri) {
 
-     DeprecateTopicRequest request;
+    DeprecateTopicRequest request;
 
-    ::uprotocol::v1::UAuthority* mutableAuthority = request.mutable_topic()->mutable_authority();
-    if (mutableAuthority != nullptr) {        
-
-        if (true == uri.getUAuthority().isRemote()) {
-            mutableAuthority->set_name(uri.getUAuthority().getDevice());
-        }
-    }
-
-    ::uprotocol::v1::UEntity* mutableEntity = request.mutable_topic()->mutable_entity();
-    if (mutableEntity != nullptr) {        
-        uprotocol::uri::UEntity entity = uri.getUEntity();
-
-        mutableEntity->set_name(entity.getName());
-        
-        if (true == entity.getId().has_value()) {
-            mutableEntity->set_id(entity.getId().value());
-        }
-
-        if (true == entity.getVersion().has_value()) {
-            mutableEntity->set_version_major(entity.getVersion().value());
-        }
-    }
-
-    ::uprotocol::v1::UResource* mutableResource = request.mutable_topic()->mutable_resource();
-    if (mutableResource != nullptr) {        
-
-        uprotocol::uri::UResource resource = uri.getUResource();
-
-        mutableResource->set_name(resource.getName());
-        mutableResource->set_instance(resource.getInstance());
-        mutableResource->set_message(resource.getMessage());
-
-        if (true == resource.getId().has_value()) {
-            mutableResource->set_id(resource.getId().value());
-        }
-    }
-
+    request.set_allocated_topic(&uri);
+    
     return request;
 }
 
-UnsubscribeRequest buildUnsubscribeRequest(uprotocol::uri::UUri uri) {
+UnsubscribeRequest buildUnsubscribeRequest(UUri uri) {
 
     UnsubscribeRequest request;
 
-    ::uprotocol::v1::UAuthority* mutableAuthority = request.mutable_topic()->mutable_authority();
-    if (mutableAuthority != nullptr) {        
-
-        if (true == uri.getUAuthority().isRemote()) {
-            mutableAuthority->set_name(uri.getUAuthority().getDevice());
-        }
-    }
-
-    ::uprotocol::v1::UEntity* mutableEntity = request.mutable_topic()->mutable_entity();
-    if (mutableEntity != nullptr) {        
-        uprotocol::uri::UEntity entity = uri.getUEntity();
-
-        mutableEntity->set_name(entity.getName());
-        
-        if (true == entity.getId().has_value()) {
-            mutableEntity->set_id(entity.getId().value());
-        }
-
-        if (true == entity.getVersion().has_value()) {
-            mutableEntity->set_version_major(entity.getVersion().value());
-        }
-    }
-
-    ::uprotocol::v1::UResource* mutableResource = request.mutable_topic()->mutable_resource();
-    if (mutableResource != nullptr) {        
-
-        uprotocol::uri::UResource resource = uri.getUResource();
-
-        mutableResource->set_name(resource.getName());
-        mutableResource->set_instance(resource.getInstance());
-        mutableResource->set_message(resource.getMessage());
-
-        if (true == resource.getId().has_value()) {
-            mutableResource->set_id(resource.getId().value());
-        }
-    }
+    request.set_allocated_topic(&uri);
 
     return request;
 }
 
-SubscriptionRequest buildSubscriptionRequest(uprotocol::uri::UUri uri) {
+SubscriptionRequest buildSubscriptionRequest(UUri uri) {
 
     SubscriptionRequest request;
 
-    ::uprotocol::v1::UAuthority* mutableAuthority = request.mutable_topic()->mutable_authority();
-    if (mutableAuthority != nullptr) {        
-
-        if (true == uri.getUAuthority().isRemote()) {
-            mutableAuthority->set_name(uri.getUAuthority().getDevice());
-        }
-    }
-
-    ::uprotocol::v1::UEntity* mutableEntity = request.mutable_topic()->mutable_entity();
-    if (mutableEntity != nullptr) {        
-        uprotocol::uri::UEntity entity = uri.getUEntity();
-
-        mutableEntity->set_name(entity.getName());
-        
-        if (true == entity.getId().has_value()) {
-            mutableEntity->set_id(entity.getId().value());
-        }
-
-        if (true == entity.getVersion().has_value()) {
-            mutableEntity->set_version_major(entity.getVersion().value());
-        }
-    }
-
-    ::uprotocol::v1::UResource* mutableResource = request.mutable_topic()->mutable_resource();
-    if (mutableResource != nullptr) {        
-
-        uprotocol::uri::UResource resource = uri.getUResource();
-
-        mutableResource->set_name(resource.getName());
-        mutableResource->set_instance(resource.getInstance());
-        mutableResource->set_message(resource.getMessage());
-
-        if (true == resource.getId().has_value()) {
-            mutableResource->set_id(resource.getId().value());
-        }
-    }
+    request.set_allocated_topic(&uri);
 
     return request;
 }
@@ -257,8 +118,8 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    auto realUri = uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(), uprotocol::uri::UEntity::longFormat("real.app"), uprotocol::uri::UResource::longFormat("milliseconds"));
-    auto demoUri = uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(), uprotocol::uri::UEntity::longFormat("demo.app"), uprotocol::uri::UResource::longFormat("milliseconds"));
+    auto realUri = LongUriSerializer::deserialize("/real.app/1/milliseconds");
+    auto demoUri = LongUriSerializer::deserialize("/demo.app/1/milliseconds");
 
     auto req1 = buildCreateTopicRequest(realUri);
     auto req2 = buildCreateTopicRequest(demoUri);

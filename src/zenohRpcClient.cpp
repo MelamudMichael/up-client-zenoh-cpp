@@ -37,8 +37,8 @@
 
 using namespace uprotocol::utransport;
 using namespace uprotocol::uuid;
-using namespace uprotocol::uri;
 using namespace uprotocol::v1;
+using namespace uprotocol::uri;
 
 ZenohRpcClient& ZenohRpcClient::instance(void) noexcept {
     
@@ -193,6 +193,8 @@ UStatus ZenohRpcClient::getError(const UUID &uid) noexcept {
     if (status == invokeMethodStatusMap_.end()) {
         UStatus status;
         status.set_code(UCode::OK);
+
+        return status;
     } else {
         return status->second;
     }

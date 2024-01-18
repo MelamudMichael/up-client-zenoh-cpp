@@ -26,9 +26,12 @@
 #include <csignal>
 #include <uprotocol-cpp-ulink-zenoh/transport/zenohUTransport.h>
 #include <uprotocol-cpp/uuid/serializer/UuidSerializer.h>
+#include <uprotocol-cpp/uri/serializer/LongUriSerializer.h>
 #include <src/main/proto/ustatus.pb.h>
+#include <src/main/proto/uri.pb.h>
 
 using namespace uprotocol::utransport;
+using namespace uprotocol::uri;
 using namespace uprotocol::uuid;
 using namespace uprotocol::v1;
 
@@ -43,7 +46,7 @@ void signalHandler(int signal) {
 
 class TimeListener : public UListener {
     
-    UStatus onReceive(const uprotocol::uri::UUri &uri, 
+    UStatus onReceive(const UUri &uri, 
                       const UPayload &payload, 
                       const UAttributes &attributes) const {
                         
@@ -65,7 +68,7 @@ class TimeListener : public UListener {
 
 class RandomListener : public UListener {
 
-    UStatus onReceive(const uprotocol::uri::UUri &uri, 
+    UStatus onReceive(const UUri &uri, 
                       const UPayload &payload, 
                       const UAttributes &attributes) const {
 
@@ -87,7 +90,7 @@ class RandomListener : public UListener {
 
 class CounterListener : public UListener {
 
-    UStatus onReceive(const uprotocol::uri::UUri &uri, 
+    UStatus onReceive(const UUri &uri, 
                       const UPayload &payload, 
                       const UAttributes &attributes) const {
 
@@ -126,11 +129,9 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    auto timeUri = UUri(UAuthority::local(), UEntity::longFormat("test.app"), UResource::longFormat("milliseconds"));
-
-    auto randomUri = UUri(UAuthority::local(), UEntity::longFormat("test.app"), UResource::longFormat("32bit"));
-    
-    auto counterUri = UUri(UAuthority::local(), UEntity::longFormat("test.app"), UResource::longFormat("counter"));
+    auto timeUri = LongUriSerializer::deserialize("/test.app/1/milliseconds");
+    auto randomUri = LongUriSerializer::deserialize("/test.app/1/32bit"); 
+    auto counterUri = LongUriSerializer::deserialize("/test.app/1/counter");
 
     if (UCode::OK != ZenohUTransport::instance().registerListener(timeUri, timeListener).code()) {
 

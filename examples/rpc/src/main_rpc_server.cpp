@@ -24,9 +24,12 @@
 
 #include <csignal>
 #include <uprotocol-cpp-ulink-zenoh/transport/zenohUTransport.h>
+#include <uprotocol-cpp/uri/serializer/LongUriSerializer.h>
 
 using namespace uprotocol::utransport;
+using namespace uprotocol::uuid;
 using namespace uprotocol::v1;
+using namespace uprotocol::uri;
 
 using RpcRequest = std::pair<std::unique_ptr<UUri>, std::unique_ptr<UAttributes>>;
 
@@ -44,7 +47,6 @@ class RpcListener : public UListener {
     UStatus onReceive(const UUri &uri, 
                       const UPayload &payload, 
                       const UAttributes &attributes) const {
-
         
         auto currentTime = std::chrono::system_clock::now();
         auto duration = currentTime.time_since_epoch();
@@ -57,10 +59,7 @@ class RpcListener : public UListener {
 
         UPayload response(buf, sizeof(buf), UPayloadType::VALUE);
 
-        auto type = UMessageType::RESPONSE;
-        auto priority = UPriority::STANDARD;
-
-        UAttributesBuilder builder(attributes.id(), type, priority);
+        UAttributesBuilder builder(attributes.id(), UMessageType::RESPONSE, UPriority::STANDARD);
 
         ZenohUTransport::instance().send(uri, response, builder.build());
 
@@ -89,7 +88,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    auto rpcUri = UUri(UAuthority::local(), UEntity::longFormat("test_rpc.app"), UResource::forRpcRequest("getTime"));;
+    auto rpcUri = LongUriSerializer::deserialize("/test_rpc.app/1/rpc.milliseconds");
 
     if (UCode::OK != ZenohUTransport::instance().registerListener(rpcUri, rpcListener).code()) {
         spdlog::error("ZenohRpcServer::instance().registerListener failed");

@@ -65,7 +65,6 @@ namespace uprotocol::uSubscription {
          /**
          * create topic
          * @param request - request
-         * @param func - pointer for notification function
          * @return returns OK on success and ERROR on failure
          */
          UCode createTopic(CreateTopicRequest &request);

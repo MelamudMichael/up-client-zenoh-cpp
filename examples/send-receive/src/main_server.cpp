@@ -25,7 +25,9 @@
 #include <csignal>
 #include <uprotocol-cpp-ulink-zenoh/transport/zenohUTransport.h>
 #include <uprotocol-cpp/uuid/factory/Uuidv8Factory.h>
+#include <uprotocol-cpp/uri/serializer/LongUriSerializer.h>
 #include <src/main/proto/ustatus.pb.h>
+#include <src/main/proto/uri.pb.h>
 
 using namespace uprotocol::utransport;
 using namespace uprotocol::uri;
@@ -42,6 +44,7 @@ void signalHandler(int signal) {
 }
 
 static uint8_t* getTime() {
+
     auto currentTime = std::chrono::system_clock::now();
     auto duration = currentTime.time_since_epoch();
     
@@ -77,10 +80,8 @@ UCode sendMessage(UUri &uri,
                   size_t size) {
 
     auto uuid = Uuidv8Factory::create();
-    auto type = UMessageType::PUBLISH;
-    auto priority = UPriority::STANDARD;
 
-    UAttributesBuilder builder(uuid, type, priority);
+    UAttributesBuilder builder(uuid, UMessageType::PUBLISH, UPriority::STANDARD);
 
     UAttributes attributes = builder.build();
 
@@ -108,12 +109,11 @@ int main(int argc, char **argv) {
         spdlog::error("ZenohUTransport::instance().init failed");
         return -1;
     }
-
-    auto timeUri = UUri(UAuthority::local(), UEntity::longFormat("test.app"), UResource::longFormat("milliseconds"));
-
-    auto randomUri = UUri(UAuthority::local(), UEntity::longFormat("test.app"), UResource::longFormat("32bit"));
     
-    auto counterUri = UUri(UAuthority::local(), UEntity::longFormat("test.app"), UResource::longFormat("counter"));
+    //  /entity/
+    auto timeUri = LongUriSerializer::deserialize("/test.app/1/milliseconds");
+    auto randomUri = LongUriSerializer::deserialize("/test.app/1/32bit"); 
+    auto counterUri = LongUriSerializer::deserialize("/test.app/1/counter");
 
     while (!gTerminate) {
 

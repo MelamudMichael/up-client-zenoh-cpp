@@ -60,12 +60,12 @@ std::vector<uint8_t> MessageBuilder::build(const UAttributes &attributes,
         pos = addTag(message, Tag::HINT, attributes.serializationHint().value(), pos);
     }
 
-    if (attributes.sink().has_value()) {
+    // if (attributes.sink().has_value()) {
 
-        auto sinkBase64 = uprotocol::tools::Base64::encode(LongUriSerializer::serialize(attributes.sink().value()));
+    //     // auto sinkBase64 = uprotocol::tools::Base64::encode(LongUriSerializer::serialize(attributes.sink().value()));
 
-        pos = addTag(message, Tag::SINK, sinkBase64, pos);
-    }
+    //     // pos = addTag(message, Tag::SINK, sinkBase64, pos);
+    // }
 
     if (attributes.plevel().has_value()) {
         pos = addTag(message, Tag::PLEVEL, attributes.plevel().value(), pos);
@@ -170,9 +170,9 @@ size_t MessageBuilder::calculateSize(const UAttributes &attributes,
         updateSize(attributes.serializationHint().value(), msgSize);
     }
 
-    if (attributes.sink().has_value()) {    
-        updateSize(uprotocol::tools::Base64::encode(LongUriSerializer::serialize(attributes.sink().value())), msgSize);
-    }
+    // if (attributes.sink().has_value()) {    
+    //     //updateSize(uprotocol::tools::Base64::encode(LongUriSerializer::serialize(attributes.sink().value())), msgSize);
+    // }
 
     if (attributes.plevel().has_value()) {
         updateSize(attributes.plevel().value(), msgSize);

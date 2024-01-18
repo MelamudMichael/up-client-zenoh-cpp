@@ -25,12 +25,15 @@
 #include <uprotocol-cpp-ulink-zenoh/transport/zenohUTransport.h>
 #include <uprotocol-cpp-ulink-zenoh/rpc/zenohRpcClient.h>
 #include <uprotocol-cpp/uuid/factory/Uuidv8Factory.h>
+#include <uprotocol-cpp/uri/serializer/LongUriSerializer.h>
 #include <chrono>
 #include <csignal>
 
 using namespace uprotocol::utransport;
 using namespace uprotocol::uuid;
 using namespace uprotocol::v1;
+using namespace uprotocol::uri;
+
 
 bool gTerminate = false; 
 
@@ -44,10 +47,8 @@ void signalHandler(int signal) {
 UPayload sendRPC(UUri &uri) {
 
     auto uuid = Uuidv8Factory::create(); 
-    auto type = UMessageType::REQUEST;
-    auto priority = UPriority::STANDARD;
 
-    UAttributesBuilder builder(uuid, type, priority);
+    UAttributesBuilder builder(uuid, UMessageType::REQUEST, UPriority::STANDARD);
 
     UAttributes attributes = builder.build();
 
@@ -83,7 +84,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    auto rpcUri = UUri(UAuthority::local(), UEntity::longFormat("test_rpc.app"), UResource::forRpcRequest("getTime"));
+    auto rpcUri = LongUriSerializer::deserialize("/test_rpc.app/1/rpc.milliseconds");
 
     while (!gTerminate) {
 

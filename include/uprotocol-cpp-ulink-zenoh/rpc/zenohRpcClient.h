@@ -33,7 +33,6 @@
 
 using namespace std;
 using namespace uprotocol::utransport;
-using namespace uprotocol::uri;
 using namespace uprotocol::v1;
 
 class ZenohRpcClient : public RpcClient {
