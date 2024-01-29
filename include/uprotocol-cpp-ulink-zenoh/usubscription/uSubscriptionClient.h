@@ -21,26 +21,26 @@ namespace uprotocol::uSubscription {
       public:
 
          uSubscriptionClient(const uSubscriptionClient&) = delete;
-         
+
          uSubscriptionClient& operator=(const uSubscriptionClient&) = delete;
 
 
          static uSubscriptionClient& instance() noexcept;
 
          /**
-         * initialized the uSubClient 
+         * initialized the uSubClient
          * returns UCode_OK on success and ERROR on failure
          */
          UCode init();
 
          /**
-         * terminates the uSubClient 
+         * terminates the uSubClient
          * returns UCode_OK on success and ERROR on failure
          */
-         UCode term(); 
+         UCode term();
 
          /**
-         * subscribe for topic 
+         * subscribe for topic
          * @param request - request
          * @param func - pointer for notification function
          * @return returns SubscriptionResponse on success and nullopt on failure
@@ -49,16 +49,16 @@ namespace uprotocol::uSubscription {
                                                        std::optional<notifyFunc> func = std::nullopt);
 
          /**
-         * unSubscribe from topic 
+         * unSubscribe from topic
          * @param request - request
          * @return returns OK on success and ERROR on failure
          */
          UCode unSubscribe(const UnsubscribeRequest &request);
 
          /**
-         * fetch subscriptions from uSubscription for a specific URI 
+         * fetch subscriptions from uSubscription for a specific URI
          * @param request the request
-         * @return returns FetchSubscriptionsResponse on success , nullopt on failure 
+         * @return returns FetchSubscriptionsResponse on success , nullopt on failure
          */
          std::optional<FetchSubscriptionsResponse> fetchSubscriptions(const FetchSubscriptionsRequest &request);
 
@@ -77,14 +77,14 @@ namespace uprotocol::uSubscription {
          UCode deprecateTopic(const DeprecateTopicRequest &request);
 
          /**
-         * fetch subscribers from uSubscription for a specific URI 
+         * fetch subscribers from uSubscription for a specific URI
          * @param request  - requeset
-         * @return returns FetchSubscribersResponse on success , nullopt on failure 
+         * @return returns FetchSubscribersResponse on success , nullopt on failure
          */
          std::optional<FetchSubscribersResponse> fetchSubscribers(const FetchSubscribersRequest &request);
 
          /**
-         * register from notifications for a specific URI 
+         * register from notifications for a specific URI
          * @param request - request
          * @return returns OK on success and ERROR on failure
          */
@@ -92,21 +92,21 @@ namespace uprotocol::uSubscription {
                                      const notifyFunc func);
 
          /**
-         * unregister from notifications for a specific URI 
+         * unregister from notifications for a specific URI
          * @param request - request
          * @return returns OK on success and ERROR on failure
          */
-         UCode unRegisterNotifications(const NotificationsRequest &request);
+         UCode unregisterNotifications(const NotificationsRequest &request);
 
       private:
-          
+
          uSubscriptionClient() {}
 
          template <typename T>
             UPayload sendRequest(const T &request) noexcept;
-         
+
          static constexpr auto responseTimeout_ = std::chrono::milliseconds(1000);
-   }; 
+   };
 }
 
 #endif  /* _USUBSCRIPTION_CLIENT_H_ */

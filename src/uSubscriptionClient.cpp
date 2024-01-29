@@ -17,20 +17,20 @@ using namespace uprotocol::uuid;
 using namespace uprotocol::uSubscription;
 
 uSubscriptionClient& uSubscriptionClient::instance() noexcept {
-    
+
     static uSubscriptionClient client;
 
     return client;
 }
 
 UCode uSubscriptionClient::init() {
-   
+
     if (UCode::OK != USubscriptionClientDb::instance().init()) {
 
         spdlog::error("USubscriptionClientDb::instance().init() failed");
         return UCode::UNKNOWN;
     }
-    
+
     if (UCode::OK != ZenohRpcClient::instance().init().code()) {
 
         spdlog::error("ZenohRpcClient::instance().init failed");
@@ -49,7 +49,7 @@ UCode uSubscriptionClient::term() {
     }
 
     if (UCode::OK != ZenohRpcClient::instance().term().code()) {
-        
+
         spdlog::error("ZenohRpcClient::instance().term failed");
         return UCode::UNKNOWN;
     }
@@ -68,7 +68,7 @@ UCode uSubscriptionClient::createTopic(CreateTopicRequest &request) {
     }
 
     UStatus res;
-           
+
     if (false == res.ParseFromArray(payload.data(), payload.size())) {
         spdlog::error("ParseFromArray failed");
         return UCode::UNKNOWN;
@@ -88,13 +88,20 @@ UCode uSubscriptionClient::createTopic(CreateTopicRequest &request) {
 UCode uSubscriptionClient::registerNotifications(NotificationsRequest &request,
                                                  const notifyFunc func) {
 
-    USubscriptionClientDb::instance().registerForNotifications(request.topic(), func);
+    USubscriptionClientDb::instance().registerForNotifications(request.topic(), request.subscriber().uri(), func);
 
     return UCode::OK;
 }
 
+UCode uSubscriptionClient::unregisterNotifications(const NotificationsRequest &request) {
+
+    USubscriptionClientDb::instance().unregisterForNotifications(request.topic(), request.subscriber().uri());
+
+    return UCode::OK;
+ }
+
 UCode uSubscriptionClient::deprecateTopic(const DeprecateTopicRequest &request) {
-    
+
     UPayload payload = sendRequest(request);
 
     if (0 == payload.size()) {
@@ -103,7 +110,7 @@ UCode uSubscriptionClient::deprecateTopic(const DeprecateTopicRequest &request) 
     }
 
     UStatus res;
-           
+
     if (false == res.ParseFromArray(payload.data(), payload.size())) {
         spdlog::error("ParseFromArray failed");
         return UCode::UNKNOWN;
@@ -127,9 +134,18 @@ std::optional<SubscriptionResponse> uSubscriptionClient::subscribe(const Subscri
         spdlog::error("ParseFromArray failed");
         return std::nullopt;
     }
-    
-    USubscriptionClientDb::instance().setStatus(request.topic(), resp.status().state());
-    
+
+    SubscriptionStatus_State state = resp.status().state();
+    USubscriptionClientDb::instance().setStatus(request.topic(), state);
+
+    if ((SubscriptionStatus_State_SUBSCRIBE_PENDING == state) ||
+        (SubscriptionStatus_State_SUBSCRIBED == state)) {
+
+        if (func.has_value()) {
+            USubscriptionClientDb::instance().registerForNotifications(request.topic(), request.subscriber().uri(), func.value());
+        }
+    }
+
     return resp;
 }
 
@@ -150,10 +166,11 @@ UCode uSubscriptionClient::unSubscribe(const UnsubscribeRequest &request) {
 
     if (UCode::OK == resp.code()) {
         USubscriptionClientDb::instance().setStatus(request.topic(), SubscriptionStatus_State_UNSUBSCRIBED);
+        USubscriptionClientDb::instance().unregisterForNotifications(request.topic(), request.subscriber().uri());
     } else {
         /* TODO */
     }
-    
+
     return resp.code();
 }
 
@@ -164,7 +181,7 @@ UPayload uSubscriptionClient::sendRequest(const T &request) noexcept {
 
     uint8_t buffer[request.ByteSizeLong() + sizeof(uint8_t)];
     size_t size = request.ByteSizeLong() ;
-    
+
     UPayload retPayload(nullptr, 0, UPayloadType::REFERENCE);
 
     do {
@@ -179,7 +196,7 @@ UPayload uSubscriptionClient::sendRequest(const T &request) noexcept {
         buffer[0] = static_cast<uint8_t>(requestStrToNum[descriptor->full_name()]);
 
         UPayload payload(buffer, sizeof(buffer), UPayloadType::REFERENCE);
-       
+
         UAttributesBuilder builder(uuid, UMessageType::REQUEST, UPriority::STANDARD);
 
         while (retPayload.size() == 0) {
@@ -193,7 +210,7 @@ UPayload uSubscriptionClient::sendRequest(const T &request) noexcept {
                 case std::future_status::timeout: {
                     spdlog::error("timeout received while waiting for response");
                     return retPayload;
-                } 
+                }
                 break;
                 case std::future_status::ready: {
                     retPayload = future.get();
