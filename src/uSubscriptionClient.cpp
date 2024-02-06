@@ -88,14 +88,14 @@ UCode uSubscriptionClient::createTopic(CreateTopicRequest &request) {
 UCode uSubscriptionClient::registerNotifications(NotificationsRequest &request,
                                                  const notifyFunc func) {
 
-    USubscriptionClientDb::instance().registerForNotifications(request.topic(), request.subscriber().uri(), func);
+    USubscriptionClientDb::instance().registerForNotifications(request.topic(), func);
 
     return UCode::OK;
 }
 
 UCode uSubscriptionClient::unregisterNotifications(const NotificationsRequest &request) {
 
-    USubscriptionClientDb::instance().unregisterForNotifications(request.topic(), request.subscriber().uri());
+    USubscriptionClientDb::instance().unregisterForNotifications(request.topic());
 
     return UCode::OK;
  }
@@ -135,17 +135,6 @@ std::optional<SubscriptionResponse> uSubscriptionClient::subscribe(const Subscri
         return std::nullopt;
     }
 
-    SubscriptionStatus_State state = resp.status().state();
-    USubscriptionClientDb::instance().setStatus(request.topic(), state);
-
-    if ((SubscriptionStatus_State_SUBSCRIBE_PENDING == state) ||
-        (SubscriptionStatus_State_SUBSCRIBED == state)) {
-
-        if (func.has_value()) {
-            USubscriptionClientDb::instance().registerForNotifications(request.topic(), request.subscriber().uri(), func.value());
-        }
-    }
-
     return resp;
 }
 
@@ -166,7 +155,6 @@ UCode uSubscriptionClient::unSubscribe(const UnsubscribeRequest &request) {
 
     if (UCode::OK == resp.code()) {
         USubscriptionClientDb::instance().setStatus(request.topic(), SubscriptionStatus_State_UNSUBSCRIBED);
-        USubscriptionClientDb::instance().unregisterForNotifications(request.topic(), request.subscriber().uri());
     } else {
         /* TODO */
     }

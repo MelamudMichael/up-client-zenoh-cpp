@@ -137,58 +137,64 @@ class USubscriptionClientDb : public UListener {
             return UCode::OK;
         }
 
+        /**
+         * Register for notifications on a topic.
+         *
+         * @param topicUri - Topic to be registered.
+         * @param func - Callback function to notify.
+         *
+         * @return Return OK if success.
+         */
         UCode registerForNotifications(const UUri &topicUri,
-                                       const UUri &subscriberUri,
                                        const notifyFunc &func ) {
             std::string topic;
             if (!topicUri.SerializeToString(&topic)) {
                 return UCode::INTERNAL;
             }
 
-            std::string subsriber;
-            if (!subscriberUri.SerializeToString(&subsriber)) {
-                return UCode::INTERNAL;
-            }
-
-            notifyMap_[topic][subsriber] = func;
+            notifyMap_[topic] = func;
 
             return UCode::OK;
         }
 
-        UCode unregisterForNotifications(const UUri &topicUri,
-                                         const UUri &subscriberUri) {
+        /**
+         * Unregister the notifications of a topic.
+         *
+         * @param topicUri - Topic to be unregistered.
+         *
+         * @return Return OK if success.
+         */
+        UCode unregisterForNotifications(const UUri &topicUri) {
             std::string topic;
             if (!topicUri.SerializeToString(&topic)) {
                 return UCode::INTERNAL;
             }
 
-            std::string subsriber;
-            if (!subscriberUri.SerializeToString(&subsriber)) {
-                return UCode::INTERNAL;
-            }
-
-            if (notifyMap_.find(topic) != notifyMap_.end()) {
-                if (notifyMap_[topic].find(subsriber) != notifyMap_[topic].end()) {
-                    notifyMap_[topic].erase(subsriber);
-                }
-            }
+            notifyMap_.erase(topic);
 
             return UCode::OK;
          }
 
+        /**
+         * Handle the received events.
+         *
+         * @param uri - Uri for the event.
+         * @param payload - Payload of the message.
+         * @param attributes - Attributes for the message.
+         *
+         * @return Return UStatus.
+         */
         UStatus onReceive(const UUri &uri,
                           const UPayload &payload,
                           const UAttributes &attributes) const {
             UStatus status;
-            status.set_code(UCode::INTERNAL);
+            status.set_code(UCode::OK);
 
             if (uri == uSubUpdatesUri) {
-                if (UCode::OK != notifyUpdate(payload)) {
-                    spdlog::error("notifyUpdate failed");
-                }
+                UCode code = notifyUpdate(payload);
+                status.set_code(code);
             }
 
-            status.set_code(UCode::OK);
             return status;
         }
 
@@ -201,9 +207,16 @@ class USubscriptionClientDb : public UListener {
                                                        //             uprotocol::uri::UResource::forRpcRequest("subscriptions#Update"));
     private:
 
+        /**
+         * Notify the Subscription Change Update.
+         *
+         * @param payload - Payload containg the subscription status.
+         *
+         * @return UStatus of the processing.
+         */
         UCode notifyUpdate(const UPayload &payload) const {
             Update update;
-            if (false == update.ParseFromArray(payload.data(), payload.size())) {
+            if (!update.ParseFromArray(payload.data(), payload.size())) {
                 spdlog::error("ParseFromArray failed");
                 return UCode::INTERNAL;
             }
@@ -213,27 +226,21 @@ class USubscriptionClientDb : public UListener {
                 return UCode::INTERNAL;
             }
 
-            std::string updatedSubscriber;
-            if (!update.subscriber().SerializeToString(&updatedSubscriber)) {
-                return UCode::INTERNAL;
-            }
-
-            if (notifyMap_.find(subscribedTopic) != notifyMap_.end()) {
-                auto notifySubscriberMap = notifyMap_.at(subscribedTopic);
-                for (auto notify : notifySubscriberMap) {
-                    std::string notifySubscriber = notify.first;
-                    if ((notifySubscriber == subscribedTopic) || (notifySubscriber == updatedSubscriber)) {
-                        if (nullptr != notify.second) {
-                            notify.second(update.status());
-                        }
-                    }
+            auto it = notifyMap_.find(subscribedTopic);
+            if (notifyMap_.end() != it) {
+                notifyFunc notify = it->second;
+                if (nullptr != notify) {
+                    notify(update.status());
                 }
             }
 
             return UCode::OK;
         }
 
-        unordered_map<std::string, unordered_map<std::string, notifyFunc>> notifyMap_;
+        /**
+         * Map to store the callbacks for the notifications.
+         */
+        unordered_map<std::string, notifyFunc> notifyMap_;
 
         unordered_map<std::string, UCode> pubStatusMap_;
 

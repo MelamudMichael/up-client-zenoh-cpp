@@ -32,7 +32,9 @@ static std::unordered_map<std::string, Request> requestStrToNum = {
     {"uprotocol.core.usubscription.v3.ResetRequest",                Request::RESET_REQUEST}
 };
 
-    /* URI for sending usubscription updates */
+    /**
+     * URI for sending usubscription updates.
+     */
     static UUri uSubUpdatesUri = ::uprotocol::uri::LongUriSerializer::deserialize("/core.usubscription/3/subscriptions#Update");
 
 }
