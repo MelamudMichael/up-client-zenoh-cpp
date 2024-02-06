@@ -35,7 +35,7 @@ class USubscriptionClientDb : public UListener {
                 return UCode::UNKNOWN;
             }
 
-            if (UCode::OK != ZenohUTransport::instance().registerListener(uSubUriUpdates_, USubscriptionClientDb::instance()).code()) {
+            if (UCode::OK != ZenohUTransport::instance().registerListener(uSubUpdatesUri, USubscriptionClientDb::instance()).code()) {
 
                 spdlog::error("ZenohUTransport::instance().init failed");
                 return UCode::UNKNOWN;
@@ -52,7 +52,7 @@ class USubscriptionClientDb : public UListener {
 
             pid_t pid = getpid();
 
-            if (UCode::OK != ZenohUTransport::instance().unregisterListener(uSubUriUpdates_, USubscriptionClientDb::instance()).code()) {
+            if (UCode::OK != ZenohUTransport::instance().unregisterListener(uSubUpdatesUri, USubscriptionClientDb::instance()).code()) {
 
                 spdlog::error("ZenohUTransport::instance().init failed");
                 return UCode::UNKNOWN;
@@ -202,9 +202,6 @@ class USubscriptionClientDb : public UListener {
                                                //              uprotocol::uri::UEntity::longFormat("core.usubscription"),
                                                    //          uprotocol::uri::UResource::forRpcRequest("subscribe"));
 
-        UUri uSubUriUpdates_ ;//= uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(),
-                                                         //           uprotocol::uri::UEntity::longFormat("core.usubscription"),
-                                                       //             uprotocol::uri::UResource::forRpcRequest("subscriptions#Update"));
     private:
 
         /**
