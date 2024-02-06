@@ -182,8 +182,10 @@ class USubscriptionClientDb : public UListener {
             UStatus status;
             status.set_code(UCode::INTERNAL);
 
-            if (UCode::OK != notifyUpdate(payload)) {
-                spdlog::error("notifyUpdate failed");
+            if (uri == uSubUpdatesUri) {
+                if (UCode::OK != notifyUpdate(payload)) {
+                    spdlog::error("notifyUpdate failed");
+                }
             }
 
             status.set_code(UCode::OK);

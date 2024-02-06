@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <uri.pb.h>
+#include <uprotocol-cpp/uri/serializer/LongUriSerializer.h>
 
 using namespace uprotocol::v1;
 
@@ -28,20 +29,21 @@ static std::unordered_map<std::string, Request> requestStrToNum = {
     {"uprotocol.core.usubscription.v3.DeprecateTopicRequest",       Request::DEPRECATE_TOPIC_REQUEST},
     {"uprotocol.core.usubscription.v3.NotificationsRequest",        Request::NOTIFICATION_REQUEST},
     {"uprotocol.core.usubscription.v3.FetchSubscribersRequest",     Request::FETCH_SUBSCRIBERS_REQUEST},
-    {"uprotocol.core.usubscription.v3.ResetRequest",                Request::RESET_REQUEST}};
+    {"uprotocol.core.usubscription.v3.ResetRequest",                Request::RESET_REQUEST}
+};
+
+    /* URI for sending usubscription updates */
+    static UUri uSubUpdatesUri = ::uprotocol::uri::LongUriSerializer::deserialize("/core.usubscription/3/subscriptions#Update");
+
 }
 
 //core.usubscription.subscribe
-static UUri uSubRequestsUri;  //= uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(), 
+static UUri uSubRequestsUri;  //= uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(),
                                 //                                   uprotocol::uri::UEntity::longFormat("core.usubscription"),
                                   //                                 uprotocol::uri::UResource::forRpcRequest("subscribe"));
-//uSub->streamer - rpc regex 
-static UUri uSubRemoteRequestsUri; //= uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(), 
+//uSub->streamer - rpc regex
+static UUri uSubRemoteRequestsUri; //= uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(),
                                     //                                     uprotocol::uri::UEntity::longFormat("core.streamer"),
                                       //                                   uprotocol::uri::UResource::forRpcRequest("subscribe")); /* TBD */
 
-/* URI for sending usubscription updates */ 
-static UUri uSubUpdatesUri; //= uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(), 
-                              //                                    uprotocol::uri::UEntity::longFormat("core.usubscription"),
-                                //                                  uprotocol::uri::UResource::forRpcRequest("subscriptions#Update"));
 #endif /* _USUBSCRIPTION_COMMON_H_ */
