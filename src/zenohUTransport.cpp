@@ -22,6 +22,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <uprotocol-cpp-ulink-zenoh/usubscription/common/uSubscriptionCommon.h>
 #include <uprotocol-cpp-ulink-zenoh/message/messageBuilder.h>
 #include <uprotocol-cpp-ulink-zenoh/message/messageParser.h>
 #include <uprotocol-cpp-ulink-zenoh/transport/zenohUTransport.h>
@@ -345,7 +346,10 @@ UStatus ZenohUTransport::registerListener(const UUri &uri,
     }
 
     if (false == isRPCMethod(uri.resource())) {
-        if (SubscriptionStatus_State_SUBSCRIBED != getSubscriberStatus(uri)) {
+        UEntity uSubscription;
+        uSubscription.set_name("core.usubscription");
+        bool isUSubscription = (uri.entity() == uSubscription);
+        if ( (!isUSubscription) && (SubscriptionStatus_State_SUBSCRIBED != getSubscriberStatus(uri)) ) {
             spdlog::error("URI is not SUBSCRIBED, cannot register listener");
             status.set_code(UCode::UNAVAILABLE);
             return status;
