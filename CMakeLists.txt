@@ -19,7 +19,5 @@ add_library(
     src/zenohUTransport.cpp
     src/zenohRpcClient.cpp
     src/zenohSessionManager.cpp
-    src/messageBuilder.cpp
-    src/messageParser.cpp
     /usr/local/lib64/libzenohc.so)
 
