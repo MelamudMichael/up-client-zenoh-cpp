@@ -124,42 +124,49 @@ std::optional<SubscriptionResponse> uSubscriptionClient::subscribe(const Subscri
     UPayload payload = sendRequest(request);
 
     if (0 == payload.size()) {
-        spdlog::error("payload size is 0");
+        spdlog::error("{}: payload size is 0", __func__);
         return std::nullopt;
     }
 
-    SubscriptionResponse resp;
+    SubscriptionResponse response;
 
-    if (false == resp.ParseFromArray(payload.data(), payload.size())) {
-        spdlog::error("ParseFromArray failed");
+    if (false == response.ParseFromArray(payload.data(), payload.size())) {
+        spdlog::error("{}: Failed to ParseFromArray", __func__);
         return std::nullopt;
     }
 
-    return resp;
+    if (UCode::OK == response.status().code()) {
+        USubscriptionClientDb::instance().setStatus(request.topic(), response.status().state());
+    } else {
+        spdlog::error("{}: Failed - {}", __func__, UCode_Name(response.status().code()));
+    }
+
+    return response;
 }
 
 UCode uSubscriptionClient::unSubscribe(const UnsubscribeRequest &request) {
     UPayload payload = sendRequest(request);
 
     if (0 == payload.size()) {
-        spdlog::error("payload size is 0");
-        return UCode::OK;
+        spdlog::error("{}: payload size is 0", __func__);
+        return UCode::UNAVAILABLE;
     }
 
-    UStatus resp;
+    UStatus status;
 
-    if (false == resp.ParseFromArray(payload.data(), payload.size())) {
-        spdlog::error("ParseFromArray failed");
-        return UCode::OK;
+    if (false == status.ParseFromArray(payload.data(), payload.size())) {
+        spdlog::error("{}: Failed to ParseFromArray", __func__);
+        return UCode::INTERNAL;
     }
 
-    if (UCode::OK == resp.code()) {
+    UCode code = status.code();
+    if (UCode::OK == code) {
         USubscriptionClientDb::instance().setStatus(request.topic(), SubscriptionStatus_State_UNSUBSCRIBED);
     } else {
-        /* TODO */
+        spdlog::error("{}: Failed - {}", __func__, UCode_Name(status.code()));
     }
 
-    return resp.code();
+    return code;
 }
 
 template <typename T>
@@ -188,7 +195,7 @@ UPayload uSubscriptionClient::sendRequest(const T &request) noexcept {
         UAttributesBuilder builder(uuid, UMessageType::REQUEST, UPriority::STANDARD);
 
         while (retPayload.size() == 0) {
-            auto future = ZenohRpcClient::instance().invokeMethod(USubscriptionClientDb::instance().uSubUri_, payload, builder.build());
+            auto future = ZenohRpcClient::instance().invokeMethod(uSubRequestsUri, payload, builder.build());
             if (false == future.valid()) {
                 spdlog::error("result is not valid");
                 break;

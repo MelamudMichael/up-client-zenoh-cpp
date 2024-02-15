@@ -35,21 +35,26 @@ using namespace uprotocol::uuid;
 using namespace uprotocol::v1;
 using namespace uprotocol::uSubscription;
 
-bool gTerminate = false; 
+bool gTerminate = false;
 
 void signalHandler(int signal) {
     if (signal == SIGINT) {
         std::cout << "Ctrl+C received. Exiting..." << std::endl;
-        gTerminate = true; 
+        gTerminate = true;
     }
 }
 
 class TimeListener : public UListener {
-    
-    UStatus onReceive(const UUri &uri, 
-                      const UPayload &payload, 
+
+    UStatus onReceive(const UUri &uri,
+                      const UPayload &payload,
                       const UAttributes &attributes) const {
         UStatus status;
+
+        uint8_t counter;
+        memcpy(&counter, payload.data(), payload.size());
+        std::string topic = ::uprotocol::uri::LongUriSerializer::serialize(uri);
+        spdlog::info("Receive Message - {} on Topic: {} \n", counter, topic);
 
         status.set_code(UCode::OK);
 
@@ -57,46 +62,209 @@ class TimeListener : public UListener {
     }
 };
 
-CreateTopicRequest buildCreateTopicRequest(UUri uri) {
+class Client {
 
-    CreateTopicRequest request;
+public:
 
-    request.set_allocated_topic(&uri);
+    Client(const std::string name, const std::string publisher, const std::string subscriber) :
+        name_(name),
+        publisherUri_(LongUriSerializer::deserialize(publisher)),
+        subscriberUri_(LongUriSerializer::deserialize(subscriber)) {}
 
-    return request;
-}
+    Client(const Client &) = delete;
 
-DeprecateTopicRequest buildDeprecateTopicRequest(UUri uri) {
+    virtual ~Client() = default;
 
-    DeprecateTopicRequest request;
+    virtual void test() = 0;
 
-    request.set_allocated_topic(&uri);
-    
-    return request;
-}
+protected:
 
-UnsubscribeRequest buildUnsubscribeRequest(UUri uri) {
+    int init() {
+        if (UCode::OK != ZenohUTransport::instance().init().code()) {
+            spdlog::error("ZenohUTransport::instance().init failed");
+            return -1;
+        }
 
-    UnsubscribeRequest request;
+        if (UCode::OK != uSubscriptionClient::instance().init()) {
+            spdlog::error("uSubscriptionClient::instance().init() failed");
+            return -1;
+        }
+        return 0;
+    }
 
-    request.set_allocated_topic(&uri);
+    int term() {
+        if (UCode::OK != uSubscriptionClient::instance().term()) {
+            spdlog::error("uSubscriptionClient::instance().term() failed");
+            return -1;
+        }
 
-    return request;
-}
+        if (UCode::OK != ZenohUTransport::instance().term().code()) {
+            spdlog::error("ZenohUTransport::instance().term() failed");
+            return -1;
+        }
+        return 0;
+    }
 
-SubscriptionRequest buildSubscriptionRequest(UUri uri) {
+    void createTopic() {
+        CreateTopicRequest request;
+        request.mutable_topic()->CopyFrom(publisherUri_);
+        UCode code = uSubscriptionClient::instance().createTopic(request);
+        spdlog::info("{}: {} \n", name_, __func__);
+    }
 
-    SubscriptionRequest request;
+    void deprecateTopic() {
+        DeprecateTopicRequest request;
+        request.mutable_topic()->CopyFrom(publisherUri_);
+        UCode code = uSubscriptionClient::instance().deprecateTopic(request);
+        spdlog::info("{}: {} \n", name_, __func__);
+    }
 
-    request.set_allocated_topic(&uri);
+    void subscribe() {
+        SubscriptionRequest request;
+        request.mutable_topic()->CopyFrom(publisherUri_);
+        request.mutable_subscriber()->mutable_uri()->CopyFrom(subscriberUri_);
+        auto response = uSubscriptionClient::instance().subscribe(request);
+        UCode code = response.has_value() ? response.value().status().code() : UCode::UNKNOWN;
+        spdlog::info("{}: {} \n", name_, __func__);
+    }
 
-    return request;
-}
+    void unsubscribe() {
+        UnsubscribeRequest request;
+        request.mutable_topic()->CopyFrom(publisherUri_);
+        request.mutable_subscriber()->mutable_uri()->CopyFrom(subscriberUri_);
+        UCode code = uSubscriptionClient::instance().unSubscribe(request);
+        spdlog::info("{}: {} \n", name_, __func__);
+    }
+
+    void registerNotifications() {
+        NotificationsRequest request;
+        request.mutable_topic()->CopyFrom(publisherUri_);
+        UCode code = uSubscriptionClient::instance().registerNotifications(request, receiveSusbcriptionChange);
+        spdlog::info("{}: {} \n", name_, __func__);
+    }
+
+    void unregisterNotifications() {
+        NotificationsRequest request;
+        request.mutable_topic()->CopyFrom(publisherUri_);
+        UCode code = uSubscriptionClient::instance().unregisterNotifications(request);
+        spdlog::info("{}: {} \n", name_, __func__);
+    }
+
+    void publish() {
+        UAttributesBuilder builder(Uuidv8Factory::create(), UMessageType::PUBLISH, UPriority::STANDARD);
+        UAttributes attributes = builder.build();
+        uint8_t *message = getCounter();
+        UPayload payload(message, sizeof(uint8_t), UPayloadType::VALUE);
+        UCode code = ZenohUTransport::instance().send(publisherUri_, payload, attributes).code();
+        spdlog::info("{}: {} Message - {} \n", name_, __func__, *message);
+    }
+
+    void registerListener() {
+        UStatus status = ZenohUTransport::instance().registerListener(publisherUri_, listener);
+        spdlog::info("{}: {} \n", name_, __func__);
+    }
+
+    void unregisterListener() {
+        UStatus status = ZenohUTransport::instance().unregisterListener(publisherUri_, listener);
+        spdlog::info("{}: {} \n", name_, __func__);
+    }
+
+    static void receiveSusbcriptionChange(const SubscriptionStatus& status) {
+        spdlog::info("Received Subscription Change Update - {} \n", SubscriptionStatus_State_Name(status.state()));
+    }
+
+    static uint8_t* getCounter() {
+        static uint8_t counter = 0;
+        ++counter;
+        return &counter;
+    }
+
+private:
+
+    const std::string name_;
+    const UUri publisherUri_;
+    const UUri subscriberUri_;
+    TimeListener listener;
+};
+
+class PublisherTest : public Client {
+
+public:
+    PublisherTest(std::string publisher) : Client("PUBLISHER", publisher, "") {
+        spdlog::info("PUBLISHER: Topic - {} \n", publisher);
+    }
+
+    ~PublisherTest() = default;
+
+    void test() {
+        init();
+
+        createTopic();
+        registerNotifications();
+
+        while (!gTerminate) {
+            publish();
+
+            spdlog::info("Press 'Enter' to Publish Message, 'X' to Stop execution: ");
+            std::string userInput;
+            std::getline(std::cin, userInput);
+            if ((userInput == "X") || (userInput == "x")) {
+                break;
+            }
+        }
+
+        unregisterNotifications();
+        deprecateTopic();
+
+        term();
+    }
+
+};
+
+class SubscriberTest : public Client {
+
+public:
+    SubscriberTest(std::string subscriber, std::string subscription) : Client("SUBSCRIBER", subscription, subscriber) {
+        spdlog::info("SUBSCRIBER: Topic - {} subscribing to {} \n", subscriber, subscription);
+    }
+
+    void test () {
+        init();
+
+        subscribe();
+        registerListener();
+
+        while (!gTerminate) {
+            spdlog::info("Press 'S' to Subscribe, 'U' to Unsubscribe, 'X' to Stop execution: ");
+            std::string userInput;
+            std::getline(std::cin, userInput);
+
+            if ((userInput == "S") || (userInput == "s")) {
+
+                subscribe();
+                registerListener();
+
+            } else if ((userInput == "U") || (userInput == "u")) {
+
+                unregisterListener();
+                unsubscribe();
+
+            } else if ((userInput == "X") || (userInput == "x")) {
+                break;
+            }
+        }
+
+        unregisterListener();
+        unsubscribe();
+
+        term();
+    }
+
+};
 
 int main(int argc, char **argv) {
-
-    TimeListener listener;
-    std::string userInput;
+    const std::string publishUri = "/publisher.app/1/counter";
+    const std::string subscribeUri = "/subscriber.app/1/monitoring";
 
     signal(SIGINT, signalHandler);
 
@@ -106,93 +274,24 @@ int main(int argc, char **argv) {
         }
     }
 
-    ZenohUTransport *transport = &ZenohUTransport::instance();
-   
-    if (UCode::OK != transport->init().code()) {
-        spdlog::error("ZenohUTransport::instance().init failed");
+    // Select Client Type: Publisher or Subscriber
+    spdlog::info("Input 'P' for Publisher or 'S' for Subscriber: ");
+    std::string userInput;
+    std::getline(std::cin, userInput);
+    std::string name;
+
+    std::unique_ptr<Client> client;
+    if ((userInput == "P") || (userInput == "p")) {
+        client = make_unique<PublisherTest>(publishUri);
+    } else if ((userInput == "S") || (userInput == "s")) {
+        client = make_unique<SubscriberTest>(subscribeUri, publishUri);
+    } else {
+        spdlog::error("Invalid Input: {}", userInput);
         return -1;
     }
 
-    if (UCode::OK != uSubscriptionClient::instance().init()) {
-        spdlog::error("uSubscriptionClient::instance().init() failed");
-        return -1;
-    }
-
-    auto realUri = LongUriSerializer::deserialize("/real.app/1/milliseconds");
-    auto demoUri = LongUriSerializer::deserialize("/demo.app/1/milliseconds");
-
-    auto req1 = buildCreateTopicRequest(realUri);
-    auto req2 = buildCreateTopicRequest(demoUri);
-    auto req3 = buildSubscriptionRequest(realUri);
-    auto req4 = buildUnsubscribeRequest(realUri);
-
-    UAttributesBuilder builder(Uuidv8Factory::create(), UMessageType::PUBLISH, UPriority::STANDARD);
-
-    UAttributes attributes = builder.build();
-
-    UPayload payload(nullptr, 0, UPayloadType::VALUE);
-
-    std::getline(std::cin, userInput);    
-
-    spdlog::info("########## SCENARIO #1 Start - Try to send without calling CreateTopic ##########");
-    auto retVal = transport->send(realUri, payload, attributes).code();
-    spdlog::info("########## SCENARIO #1 End - Send without calling CreateTopic (return value == {}) ##########", retVal);
-
-    spdlog::info("########## Sending CreateTopic Requests to uSubscription ##########");
-
-    auto resp = uSubscriptionClient::instance().createTopic(req1);
-    spdlog::info("\t########## response received real.app = {} ", resp);
-    resp = uSubscriptionClient::instance().createTopic(req2);
-    spdlog::info("\t########## response received demo.app = {} ", resp);
-
-    std::getline(std::cin, userInput);    
-
-    spdlog::info("########## SCENARIO #2 Start - Try to send without authorization ##########");
-    retVal = transport->send(demoUri, payload, attributes).code();
-    spdlog::info("########## SCENARIO #2 End - Send without authorization (return value == {}) ##########", retVal);  
-   
-    std::getline(std::cin, userInput);    
-
-    uint8_t buf[1];
-    UPayload validPayload(buf, 1, UPayloadType::VALUE);
-
-    spdlog::info("########## SCENARIO #3 Start - Try to send with authorizaion ##########");
-    retVal = transport->send(realUri, validPayload, attributes).code();
-    spdlog::info("########## SCENARIO #3 End - Send with authorizatdion (return value == {}) ##########", retVal); 
-
-    std::getline(std::cin, userInput);      
-    spdlog::info("########## SCENARIO #4 Start - Try to RegisterListener without subscribe ##########");
-    retVal = transport->registerListener(realUri, listener).code();
-    spdlog::info("########## SCENARIO #4 End - registerListener without subscribe (return value == {}) ##########", retVal);
-
-    std::getline(std::cin, userInput);     
-    
-    auto subResp = uSubscriptionClient::instance().subscribe(req3);
-
-    spdlog::info("\t########## subscribe response received real.app = {} ", subResp.value().mutable_status()->state());
-
-    spdlog::info("########## SCENARIO #5 Start - Try to RegisterListener after subscribe ##########");
-    transport->registerListener(realUri, listener);
-    spdlog::info("########## SCENARIO #5 End - registerListener after subscribe ##########");
-
-    spdlog::info("########## SCENARIO #6 Start - unsubscribe ##########");
-    uSubscriptionClient::instance().unSubscribe(req4);
-    spdlog::info("########## SCENARIO #6 End - unsubscribe ##########");
-
-    while (!gTerminate) {
-
-         sleep(1);
-    }
-    
-    if (UCode::OK != uSubscriptionClient::instance().term()) {
-        spdlog::error("uSubscriptionClient::instance().term() failed");
-        return -1;
-    }
-
-    if (UCode::OK != transport->term().code()) {
-        spdlog::error("ZenohUTransport::instance().term() failed");
-        return -1;
-    }
+    // Execute Client Test
+    client->test();
 
     return 0;
 }

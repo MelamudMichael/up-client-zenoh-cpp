@@ -278,8 +278,9 @@ class USubscriptionClientDb {
                           const UAttributes &attributes) const override {
             UStatus status;
             status.set_code(UCode::OK);
-
-            if (uri == uSubUpdatesUri) {
+            std::string str = uprotocol::uri::LongUriSerializer::serialize(uri);
+            std::string subUri = uprotocol::uri::LongUriSerializer::serialize(uSubUpdatesUri);
+            if (str == subUri) {
                 UCode code = USubscriptionClientDb::instance().notifyUpdate(payload);
                 status.set_code(code);
             }

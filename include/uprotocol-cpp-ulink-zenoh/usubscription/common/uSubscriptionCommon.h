@@ -37,10 +37,11 @@ static std::unordered_map<std::string, Request> requestStrToNum = {
      */
     static UUri uSubUpdatesUri = ::uprotocol::uri::LongUriSerializer::deserialize("/core.usubscription/3/subscriptions#Update");
 
+    static UUri uSubRequestsUri = ::uprotocol::uri::LongUriSerializer::deserialize("/core.usubscription/3/rpc.test");
 }
 
 //core.usubscription.subscribe
-static UUri uSubRequestsUri;  //= uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(),
+// static UUri uSubRequestsUri;  //= uprotocol::uri::UUri(uprotocol::uri::UAuthority::local(),
                                 //                                   uprotocol::uri::UEntity::longFormat("core.usubscription"),
                                   //                                 uprotocol::uri::UResource::forRpcRequest("subscribe"));
 //uSub->streamer - rpc regex
