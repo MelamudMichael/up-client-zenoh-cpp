@@ -23,17 +23,17 @@
  */
 
 #include <uprotocol-cpp-ulink-zenoh/rpc/zenohRpcClient.h>
-#include <uprotocol-cpp-ulink-zenoh/message/messageBuilder.h>
-#include <uprotocol-cpp-ulink-zenoh/message/messageParser.h>
 #include <uprotocol-cpp-ulink-zenoh/session/zenohSessionManager.h>
 #include <uprotocol-cpp/uuid/serializer/UuidSerializer.h>
 #include <uprotocol-cpp/uri/serializer/LongUriSerializer.h>
 #include <uprotocol-cpp/transport/datamodel/UPayload.h>
-#include <uprotocol-cpp/transport/datamodel/UAttributes.h>
+#include <uprotocol-cpp/transport/datamodel/UAttributesBuilder.h>
 #include <src/main/proto/ustatus.pb.h>
 #include <spdlog/spdlog.h>
 #include <zenoh.h>
 #include <uuid/uuid.h>
+#include <src/main/proto/umessage.pb.h>
+#include <src/main/proto/uattributes.pb.h>
 
 using namespace uprotocol::utransport;
 using namespace uprotocol::uuid;
@@ -41,7 +41,7 @@ using namespace uprotocol::uri;
 using namespace uprotocol::v1;
 
 ZenohRpcClient& ZenohRpcClient::instance(void) noexcept {
-    
+
     static ZenohRpcClient rpcClient;
 
     return rpcClient;
@@ -116,56 +116,53 @@ UStatus ZenohRpcClient::term() noexcept {
 
     return status;
 }
-std::future<UPayload> ZenohRpcClient::invokeMethod(const UUri &uri, 
-                                                   const UPayload &payload, 
-                                                   const UAttributes &attributes) noexcept {
-    std::future<UPayload> future;
 
+std::future<UPayload> ZenohRpcClient::invokeMethod(const UUri &uri, 
+                                                   const UPayload &requestPayload, 
+                                                   const UAttributes &attributes) noexcept {
     if (0 == refCount_) {
         spdlog::error("ZenohRpcClient is not initialized");
-        return std::move(future);
+        return std::future<UPayload>();
     }
 
     if (UMessageType::REQUEST != attributes.type()) {
         spdlog::error("Wrong message type = {}", UMessageTypeToString(attributes.type()).value());
-        return std::move(future);
+        return std::future<UPayload>();
     }
 
-    auto uriHash = std::hash<std::string>{}(LongUriSerializer::serialize(uri));
+    uprotocol::v1::UMessage msg;
+    *msg.mutable_attributes() = attributes;
+    msg.mutable_payload()->set_value(requestPayload.data(), requestPayload.size());
 
-    auto header = MessageBuilder::buildHeader(attributes);
-    if (header.empty()) {
-        spdlog::error("Failed to build header");
-        return std::move(future);
+    std::vector<uint8_t> serializedMessage(msg.ByteSizeLong());
+    if (!msg.SerializeToArray(serializedMessage.data(), serializedMessage.size())) {
+        spdlog::error("SerializeToArray failed");
+        return std::future<UPayload>();
     }
 
-    z_owned_bytes_map_t map = z_bytes_map_new();
-
-    z_bytes_t headerBytes = {.len = header.size(), .start = header.data()};
-    z_bytes_map_insert_by_alias(&map, z_bytes_new("header"), headerBytes);
-
-    z_owned_reply_channel_t *channel = new z_owned_reply_channel_t;
-    *channel = zc_reply_fifo_new(16);
+    auto uriStr = uri.toString();
+    z_owned_reply_channel_t *channel = new z_owned_reply_channel_t(zc_reply_fifo_new(16));
 
     z_get_options_t opts = z_get_options_default();
     opts.timeout_ms = requestTimeoutMs_;
-    opts.attachment = z_bytes_map_as_attachment(&map);
 
-    if (0 != z_get(z_loan(session_), z_keyexpr(std::to_string(uriHash).c_str()), "", z_move(channel->send), &opts)) {
+    if (0 != z_get(z_loan(session_), uriStr.c_str(), serializedMessage.data(), serializedMessage.size(), z_move(channel->send), &opts)) {
         spdlog::error("z_get failure");
-        z_drop(&map);
-        return std::move(future);
+        delete channel;
+        return std::future<UPayload>();
     }
 
-    future = threadPool_->submit(handleReply, channel);
+    auto future = threadPool_->submit([channel]() -> UPayload {
+        return ZenohRpcClient::handleReply(channel);
+    });
 
     if (!future.valid()) {
         spdlog::error("failed to invoke method");
     }
 
-    z_drop(&map);
-    return future; 
+    return future;
 }
+
 
 UPayload ZenohRpcClient::handleReply(z_owned_reply_channel_t *channel) {
     z_owned_reply_t reply = z_reply_null();
@@ -175,39 +172,21 @@ UPayload ZenohRpcClient::handleReply(z_owned_reply_channel_t *channel) {
         if (z_reply_is_ok(&reply)) {
             z_sample_t sample = z_reply_ok(&reply);
 
-            // Attachment handling and TLV extraction
-            if (sample.payload.len > 0 && sample.payload.start != nullptr) {
-                response = UPayload(sample.payload.start, sample.payload.len, UPayloadType::VALUE);
-            } else {
+            if (sample.payload.len == 0 || sample.payload.start == nullptr) {
                 spdlog::error("Payload is empty");
-            }
-
-            if (!z_check(sample.attachment)) {
-                spdlog::error("No attachment found in the reply");
                 continue;
             }
 
-            z_bytes_t index = z_attachment_get(sample.attachment, z_bytes_new("header"));
-
-            if (!z_check(index)) {
-                spdlog::error("Header not found in the attachment");
+            uprotocol::v1::UMessage msg;
+            if (!msg.ParseFromArray(sample.payload.start, sample.payload.len)) {
+                spdlog::error("ParseFromArray failed");
                 continue;
             }
 
-            spdlog::info("Attachment: value = '%.*s'", (int)index.len, index.start);
+            const auto& payload = msg.payload();
 
-            auto allTlv = MessageParser::getAllTlv(reinterpret_cast<const uint8_t*>(index.start), index.len);
-            if (!allTlv.has_value()) {
-                spdlog::error("MessageParser::getAllTlv failure");
-                continue;
-            }
+            response = UPayload(payload.value().data(), payload.value().size(), UPayloadType::VALUE);
 
-            auto header = MessageParser::getAttributes(allTlv.value());
-            if (!header.has_value()) {
-                spdlog::error("getAttributes failure");
-                continue;
-            }
-            
         } else {
             spdlog::error("error received");
             break;
