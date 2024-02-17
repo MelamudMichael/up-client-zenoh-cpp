@@ -88,16 +88,14 @@ UCode uSubscriptionClient::createTopic(CreateTopicRequest &request) {
 UCode uSubscriptionClient::registerNotifications(NotificationsRequest &request,
                                                  const notifyFunc func) {
 
-    USubscriptionClientDb::instance().registerForNotifications(request.topic(), func);
+    return USubscriptionClientDb::instance().registerForNotifications(request.topic(), func);
 
-    return UCode::OK;
 }
 
 UCode uSubscriptionClient::unregisterNotifications(const NotificationsRequest &request) {
 
-    USubscriptionClientDb::instance().unregisterForNotifications(request.topic());
+    return USubscriptionClientDb::instance().unregisterForNotifications(request.topic());
 
-    return UCode::OK;
  }
 
 UCode uSubscriptionClient::deprecateTopic(const DeprecateTopicRequest &request) {
@@ -124,21 +122,24 @@ std::optional<SubscriptionResponse> uSubscriptionClient::subscribe(const Subscri
     UPayload payload = sendRequest(request);
 
     if (0 == payload.size()) {
-        spdlog::error("{}: payload size is 0", __func__);
+        spdlog::error("payload size is 0");
         return std::nullopt;
     }
 
     SubscriptionResponse response;
 
     if (false == response.ParseFromArray(payload.data(), payload.size())) {
-        spdlog::error("{}: Failed to ParseFromArray", __func__);
+        spdlog::error("Failed to ParseFromArray");
         return std::nullopt;
     }
 
-    if (UCode::OK == response.status().code()) {
-        USubscriptionClientDb::instance().setStatus(request.topic(), response.status().state());
+    UCode code = response.status().code();
+    if (UCode::OK == code) {
+        if (UCode::OK != USubscriptionClientDb::instance().setStatus(request.topic(), response.status().state())) {
+            spdlog::error("Failed to set subscription status");
+        }
     } else {
-        spdlog::error("{}: Failed - {}", __func__, UCode_Name(response.status().code()));
+        spdlog::error("Failed to Subscribe - {}", UCode_Name(code));
     }
 
     return response;
@@ -148,22 +149,24 @@ UCode uSubscriptionClient::unSubscribe(const UnsubscribeRequest &request) {
     UPayload payload = sendRequest(request);
 
     if (0 == payload.size()) {
-        spdlog::error("{}: payload size is 0", __func__);
+        spdlog::error("payload size is 0");
         return UCode::UNAVAILABLE;
     }
 
     UStatus status;
 
     if (false == status.ParseFromArray(payload.data(), payload.size())) {
-        spdlog::error("{}: Failed to ParseFromArray", __func__);
+        spdlog::error("Failed to ParseFromArray");
         return UCode::INTERNAL;
     }
 
     UCode code = status.code();
     if (UCode::OK == code) {
-        USubscriptionClientDb::instance().setStatus(request.topic(), SubscriptionStatus_State_UNSUBSCRIBED);
+        if (UCode::OK != USubscriptionClientDb::instance().setStatus(request.topic(), SubscriptionStatus_State_UNSUBSCRIBED)) {
+            spdlog::error("Failed to set unsubscription status");
+        }
     } else {
-        spdlog::error("{}: Failed - {}", __func__, UCode_Name(status.code()));
+        spdlog::error("Failed to Unsubscribe - {}", UCode_Name(code));
     }
 
     return code;

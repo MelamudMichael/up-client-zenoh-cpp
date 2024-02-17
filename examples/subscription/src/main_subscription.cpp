@@ -160,12 +160,12 @@ protected:
     }
 
     void registerListener() {
-        UStatus status = ZenohUTransport::instance().registerListener(publisherUri_, listener);
+        UStatus status = ZenohUTransport::instance().registerListener(publisherUri_, listener_);
         spdlog::info("{}: {} \n", name_, __func__);
     }
 
     void unregisterListener() {
-        UStatus status = ZenohUTransport::instance().unregisterListener(publisherUri_, listener);
+        UStatus status = ZenohUTransport::instance().unregisterListener(publisherUri_, listener_);
         spdlog::info("{}: {} \n", name_, __func__);
     }
 
@@ -184,7 +184,7 @@ private:
     const std::string name_;
     const UUri publisherUri_;
     const UUri subscriberUri_;
-    TimeListener listener;
+    TimeListener listener_;
 };
 
 class PublisherTest : public Client {

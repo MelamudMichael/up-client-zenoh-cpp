@@ -23,6 +23,7 @@
  */
 
 #include <uprotocol-cpp-ulink-zenoh/usubscription/common/uSubscriptionCommon.h>
+#include <uprotocol-cpp-ulink-zenoh/usubscription/internal/uSubscriptionClientDb.h>
 #include <uprotocol-cpp-ulink-zenoh/message/messageBuilder.h>
 #include <uprotocol-cpp-ulink-zenoh/message/messageParser.h>
 #include <uprotocol-cpp-ulink-zenoh/transport/zenohUTransport.h>
@@ -39,9 +40,6 @@ using namespace uprotocol::uuid;
 using namespace uprotocol::v1;
 using namespace uprotocol::core::usubscription::v3;
 using namespace uprotocol::uri;
-
-extern UCode getPublisherStatus(const UUri &uri);
-extern SubscriptionStatus_State getSubscriberStatus(const UUri &uri);
 
 ZenohUTransport& ZenohUTransport::instance(void) noexcept {
 
@@ -179,11 +177,11 @@ UStatus ZenohUTransport::send(const UUri &uri,
 
     /* determine according to the URI is the send is and RPC response or a regular publish */
     if (false == isRPCMethod(uri.resource())) {
-        // if (UCode::OK != getPublisherStatus(uri)) {
-        //     spdlog::error("URI is not authorized to publish");
-        //     status.set_code(UCode::UNAVAILABLE);
-        //     return status;
-        // }
+        if (UCode::OK != USubscriptionClientDb::instance().getPublisherStatus(uri)) {
+            spdlog::error("URI is not authorized to publish");
+            status.set_code(UCode::UNAVAILABLE);
+            return status;
+        }
 
         status.set_code(sendPublish(uri, payload, attributes));
     } else {

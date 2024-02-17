@@ -80,11 +80,12 @@ class USubscriptionClientDb {
 
             std::string topic;
             if (!uri.SerializeToString(&topic)) {
-                spdlog::error("SerializeToString failed");
+                spdlog::error("Failed to SerializeToString");
                 return SubscriptionStatus_State_UNSUBSCRIBED;
             }
 
             if (subStatusMap_.find(topic) == subStatusMap_.end()) {
+                spdlog::error("Uri is not SUBSCRIBED");
                 return SubscriptionStatus_State_UNSUBSCRIBED;
             }
 
@@ -93,19 +94,18 @@ class USubscriptionClientDb {
 
         UCode getPublisherStatus(const UUri &uri) {
 
-            // auto u = Temp::buildTopic(uri);
+            std::string topic;
+            if (!uri.SerializeToString(&topic)) {
+                spdlog::error("Failed to SerializeToString");
+                return UCode::INTERNAL;
+            }
 
-            // std::string serUri;
-            // if (!u.SerializeToString(&serUri)) {
-            //     return UCode::INTERNAL;
-            // }
+            if (pubStatusMap_.find(topic) == pubStatusMap_.end()) {
+                spdlog::error("Uri is not set as publisher");
+                return UCode::UNAVAILABLE;
+            }
 
-            // if (pubStatusMap_.find(serUri) != pubStatusMap_.end()) {
-            //     return pubStatusMap_[serUri];
-            // } else {
-            //     return UCode::UNAVAILABLE;
-            // }
-            return UCode::OK;
+            return pubStatusMap_[topic];
         }
 
         /**
@@ -291,11 +291,3 @@ class USubscriptionClientDb {
 
 };
 
-
-UCode getPublisherStatus(const UUri &uri) {
-   return USubscriptionClientDb::instance().getPublisherStatus(uri);
-}
-
-SubscriptionStatus_State getSubscriberStatus(const UUri &uri) {
-    return USubscriptionClientDb::instance().getSubscriptionStatus(uri);
-}
