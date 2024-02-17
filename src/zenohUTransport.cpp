@@ -347,7 +347,7 @@ UStatus ZenohUTransport::registerListener(const UUri &uri,
         UEntity uSubscription;
         uSubscription.set_name("core.usubscription");
         bool isUSubscription = (uri.entity() == uSubscription);
-        // if ( (!isUSubscription) && (SubscriptionStatus_State_SUBSCRIBED != getSubscriberStatus(uri)) ) {
+        // if ( (!isUSubscription) && (SubscriptionStatus_State_SUBSCRIBED != USubscriptionClientDb::instance().getSubscriptionStatus(uri)) ) {
         //     spdlog::error("URI is not SUBSCRIBED, cannot register listener");
         //     status.set_code(UCode::UNAVAILABLE);
         //     return status;
