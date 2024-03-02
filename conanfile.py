@@ -46,7 +46,7 @@ class up_client_zenog_cpp(ConanFile):
 
     def requirements(self):
         if self.options.build_unbundled:
-            self.requires("up-cpp/1.5.1")
+            self.requires("up-cpp/0.1.5.0-dev")
             self.requires("zenohc/cci.20240213")
             self.requires("protobuf/3.21.12" + ("@cross/cross" if self.options.build_cross_compiling else ""))
         else:
