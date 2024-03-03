@@ -29,7 +29,7 @@ class UpClientZenoh(ConanFile):
 
     default_options = {
         "shared": False,
-        "fPIC": False,
+        "fPIC": True,
         "build_testing": False,
         "build_unbundled": False,
         "build_cross_compiling": False,
