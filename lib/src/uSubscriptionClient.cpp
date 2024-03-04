@@ -49,17 +49,17 @@ UStatus uSubscriptionClient::init() {
    
     UStatus status;
 
+    status.set_code(UCode::INTERNAL);
+
     do {
 
         if (UCode::OK != SubscriptionLocalManager::instance().init().code()) {
             spdlog::error("SubscriptionLocalManager::instance().init() failed");
-            status.set_code(UCode::INTERNAL);
             break;
         }
         
         if (UCode::OK != ZenohRpcClient::instance().init().code()) {
             spdlog::error("ZenohRpcClient::instance().init failed");
-            status.set_code(UCode::INTERNAL);
             break;
         }
 
@@ -296,7 +296,17 @@ UStatus SubscriptionLocalManager::init() {
 
     ZenohUTransport::instance().init();
 
-  //  ZenohUTransport::instance().registerListener(uSubUpdateUri, SubscriptionLocalManager::instance());
+    if (UCode::OK != setStatus(uSubUpdateUri, UCode::OK).code()) {
+        spdlog::error("setStatus failed");
+        return status;
+    }
+
+    if (UCode::OK != setStatus(uSubUpdateUri, SubscriptionStatus_State_SUBSCRIBED).code()) {
+        spdlog::error("setStatus failed");
+        return status;
+    }
+
+    ZenohUTransport::instance().registerListener(uSubUpdateUri, SubscriptionLocalManager::instance());
     
     status.set_code(UCode::OK);
     
@@ -381,12 +391,21 @@ UCode SubscriptionLocalManager::getPublisherStatus(const UUri &uri) {
 UStatus SubscriptionLocalManager::onReceive(const UUri& uri,
                                             const UPayload& payload,
                                             const UAttributes& attributes) const {
-    (void)uri;
     (void)payload;
     (void)attributes;
 
+    Update update;
+
     UStatus status;
 
+    if (false == update.ParseFromArray(payload.data(), payload.size())) {
+        spdlog::error("ParseFromArray failed");
+        status.set_code(UCode::UNKNOWN);
+        return status;
+    }
+
+    SubscriptionLocalManager::instance().setStatus(update.subscriber().uri(), update.status().state());
+   
     status.set_code(UCode::OK);
 
     return status;
