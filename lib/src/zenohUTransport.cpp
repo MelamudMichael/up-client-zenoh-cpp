@@ -522,9 +522,11 @@ UStatus ZenohUTransport::unregisterListener(const UUri &uri,
     status.set_code(UCode::OK);
     return status;
 }
-void ZenohUTransport::SubHandler(const z_sample_t* sample, void* arg) {
 
-    if (sample == nullptr || arg == nullptr) {
+void ZenohUTransport::SubHandler(const z_sample_t* sample, 
+                                 void* arg) {
+
+    if ((sample == nullptr) || (arg == nullptr)) {
         spdlog::error("Invalid arguments for SubHandler");
         return;
     }
@@ -535,6 +537,7 @@ void ZenohUTransport::SubHandler(const z_sample_t* sample, void* arg) {
     }
 
     UPayload payload{sample->payload.start, sample->payload.len, UPayloadType::REFERENCE};
+
     cbArgumentType *tuplePtr = static_cast<cbArgumentType*>(arg);
 
     // Attachment handling and TLV extraction

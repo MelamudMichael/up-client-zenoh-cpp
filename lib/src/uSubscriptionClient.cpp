@@ -397,7 +397,7 @@ UStatus SubscriptionLocalManager::onReceive(const UUri& uri,
     Update update;
 
     UStatus status;
-
+    
     if (false == update.ParseFromArray(payload.data(), payload.size())) {
         spdlog::error("ParseFromArray failed");
         status.set_code(UCode::UNKNOWN);
