@@ -154,10 +154,8 @@ std::future<UPayload> ZenohRpcClient::invokeMethod(const UUri &uri,
 
     opts.timeout_ms = requestTimeoutMs_;
     opts.attachment = z_bytes_map_as_attachment(&map);
-    opts.value.payload.len =  payload.size();
-    opts.value.payload.start = payload.data();
 
-    if ((0 != payload.size()) && (nullptr == payload.data())) {
+    if ((0 != payload.size()) && (nullptr != payload.data())) {
         opts.value.payload.len =  payload.size();
         opts.value.payload.start = payload.data();
     }

@@ -60,7 +60,9 @@ static std::unordered_map<std::string, Request> requestStrToNum = {
 //core.usubscription.subscribe
 static UUri uSubRequestsUri = LongUriSerializer::deserialize("/core.usubscription/3/rpc.subscribe"); 
 
-static UUri uSubForwareRemoteRequestsUri = LongUriSerializer::deserialize("/core.ustreamer/3/rpc.remote.subscribe"); 
+static UUri uSubForwardRemoteSubRequestsUri = LongUriSerializer::deserialize("/core.ustreamer/3/rpc.remote.subscribe"); 
+
+static UUri uSubForwardRemoteUnSubRequestsUri = LongUriSerializer::deserialize("/core.ustreamer/3/rpc.remote.unsubscribe"); 
 
 static UUri uSubUpdateUri = LongUriSerializer::deserialize("/core.usubscription/3/subscriptions#Update");
 

@@ -404,6 +404,7 @@ UStatus SubscriptionLocalManager::onReceive(const UUri& uri,
         return status;
     }
 
+    spdlog::warn("Notification Received !");
     SubscriptionLocalManager::instance().setStatus(update.subscriber().uri(), update.status().state());
    
     status.set_code(UCode::OK);
