@@ -32,11 +32,8 @@ namespace uprotocol::client {
 
     class UpZenohClient : public uprotocol::utransport::ZenohUTransport, public uprotocol::rpc::ZenohRpcClient {
 
-        private:
-            struct ConstructToken {};
-
         public:
-            UpZenohClient(const struct ConstructToken &) {}
+            UpZenohClient(const ConstructToken &) {}
             UpZenohClient(const UpZenohClient&) = delete;
             UpZenohClient& operator=(const UpZenohClient&) = delete;
 
@@ -45,10 +42,12 @@ namespace uprotocol::client {
             * @return instance of UpZenohClient
             */
             static std::shared_ptr<UpZenohClient> instance(void) noexcept;
+
+        private:
+            struct ConstructToken {};
     };
     
 }
-
 
 #endif /* _UP_ZENOH_CLIENT_H_ */
 

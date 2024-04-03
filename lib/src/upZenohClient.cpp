@@ -42,11 +42,15 @@ std::shared_ptr<UpZenohClient> UpZenohClient::instance(void) noexcept {
         }
 
         handle = std::make_shared<UpZenohClient>(ConstructToken());
-        if (handle->rpcSuccess_.code() == UCode::OK && handle->uSuccess_.code() == UCode::OK) {
+        if (handle->rpcSuccess_.code() != UCode::OK) {
+            spdlog::error("ZenohRpcClient failed to initialize");
+            return nullptr;
+        } else if (handle->uSuccess_.code() != UCode::OK) {
+            spdlog::error("ZenohUTransport failed to initialize");
+            return nullptr;
+        } else {
             w_handle = handle;
             return handle;
-        } else {
-            return nullptr;
         }
     }
 }
