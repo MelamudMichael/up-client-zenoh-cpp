@@ -45,7 +45,7 @@ std::shared_ptr<UpZenohClient> UpZenohClient::instance(void) noexcept {
         if (handle->rpcSuccess_.code() != UCode::OK) {
             spdlog::error("ZenohRpcClient failed to initialize");
             return nullptr;
-        } else if (handle->uSuccess_.code() != UCode::OK) {
+        } else if (handle->uTransportSuccess_.code() != UCode::OK) {
             spdlog::error("ZenohUTransport failed to initialize");
             return nullptr;
         } else {

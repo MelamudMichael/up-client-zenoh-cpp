@@ -80,7 +80,7 @@ namespace uprotocol::utransport {
 
         protected:
             /* Initialization success/failure */
-            uprotocol::v1::UStatus uSuccess_;
+            uprotocol::v1::UStatus uTransportSuccess_;
 
             ZenohUTransport() noexcept;
             ~ZenohUTransport() noexcept;

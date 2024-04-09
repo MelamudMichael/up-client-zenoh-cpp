@@ -71,6 +71,7 @@ ZenohRpcClient::ZenohRpcClient() noexcept {
 ZenohRpcClient::~ZenohRpcClient() noexcept {
     if (UCode::OK != ZenohSessionManager::instance().term()) {
         spdlog::error("zenohSessionManager::instance().term() failed");
+        return;
     }
     spdlog::info("ZenohRpcClient destructor done");
 }
