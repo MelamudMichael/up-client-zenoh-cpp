@@ -41,18 +41,17 @@ ZenohUTransport::ZenohUTransport() noexcept {
     /* by default initialized to empty strings */
     ZenohSessionManagerConfig sessionConfig;
 
+    uTransportSuccess_.set_code(UCode::INTERNAL);
+
     if (UCode::OK != ZenohSessionManager::instance().init(sessionConfig)) {
         spdlog::error("zenohSessionManager::instance().init() failed");
-        uSuccess_.set_code(UCode::INTERNAL);
     }
 
     if (ZenohSessionManager::instance().getSession().has_value()) {
         session_ = ZenohSessionManager::instance().getSession().value();
-    } else {
-        uSuccess_.set_code(UCode::INTERNAL);
     }
     
-    uSuccess_.set_code(UCode::OK);
+    uTransportSuccess_.set_code(UCode::OK);
 }
 
 ZenohUTransport::~ZenohUTransport() noexcept {
